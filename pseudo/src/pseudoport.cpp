@@ -7,14 +7,18 @@
 #include <errno.h>
 
 #include <QThread>
+#include <QFile>
 
 #include "pseudoport.h"
 
 pseudoport::pseudoport(QObject *parent) :
     QObject(parent)
 {
-    printf("pseudoport started\n");
-    doPoll = true;
+}
+
+pseudoport::~pseudoport()
+{
+    close(fd);
 }
 
 void pseudoport::create()
@@ -22,51 +26,41 @@ void pseudoport::create()
     char master[1024];
     char slave[1024];
 
-    int fd;
-    fd_set rfds;
-    int retval;
-
     fd = ptym_open(master, slave, 1024);
 
+    sn = new QSocketNotifier(fd, QSocketNotifier::Read, this);
+    sn->setEnabled(true);
+    sn->connect(sn, SIGNAL(activated(int)), this, SLOT(readyRead()));
+
     printf("Created pseudo-terminal %s\n", slave);
+}
 
+void pseudoport::readyRead()
+{
+    char buffer[1024];
+    ssize_t rc = read(fd, buffer, 1024);
 
-    while(doPoll)
+    if (rc < 0)
     {
-        FD_ZERO(&rfds);
-        FD_SET(fd, &rfds);
-
-        retval = select(fd + 1, &rfds, NULL, NULL, NULL);
-        if (retval == -1)
+        if (errno == EAGAIN || errno == EIO)
+            rc = 0;
+        else
         {
-            perror("select");
+            perror("read");
             return;
         }
-
-
-        if (FD_ISSET(fd, &rfds))
-        {
-            char buffer[1024];
-            ssize_t rc = read(fd, buffer, 1024);
-            if (rc < 0)
-            {
-                if (errno == EAGAIN || errno == EIO)
-                    rc = 0;
-                else
-                {
-                    perror("read");
-                    return;
-                }
-            }
-            if (rc > 0)
-            {
-                printf("received %d\n", rc);
-                emit received(buffer[0]);
-            }
-        }
     }
+    if (rc > 0)
+    {
+        /* we received something, emit it via signal */
+        emit receive(QByteArray::fromRawData(buffer, rc));
+    }
+}
 
-    close(fd);
+void pseudoport::transmit(QByteArray data)
+{
+    if (write(fd, data.data(), data.count()) < 0)
+        perror("write");
 }
 
 int pseudoport::ptym_open(char *pts_name, char *pts_name_s, int pts_namesz)

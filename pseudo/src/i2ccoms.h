@@ -8,11 +8,13 @@ class i2ccoms : public QObject
     Q_OBJECT
 public:
     explicit i2ccoms(QObject *parent = 0);
+    ~i2ccoms();
 
 signals:
+    void receive(QByteArray data);
 
 public slots:
-    void received(char c);
+    void transmit(QByteArray data);
 
 };
 

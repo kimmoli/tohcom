@@ -5,10 +5,18 @@
 i2ccoms::i2ccoms(QObject *parent) :
     QObject(parent)
 {
-    printf("i2ccoms started\n");
 }
 
-void i2ccoms::received(char c)
+i2ccoms::~i2ccoms()
 {
-    printf("%c\n", c);
+}
+
+void i2ccoms::transmit(QByteArray data)
+{
+    /* This should transmit 'data' over i2c to uart */
+    printf("%s", data.data());
+    fflush(stdout);
+
+    /* just echo back */
+    emit receive(data);
 }

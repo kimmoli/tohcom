@@ -65,8 +65,9 @@ int main(int argc, char *argv[])
 
             QThread::msleep(10);
 
-            QObject::connect(port, SIGNAL(received(char)), coms, SLOT(received(char)));
-            printf("connected some signals to slots\n");
+            QObject::connect(port, SIGNAL(receive(QByteArray)), coms, SLOT(transmit(QByteArray)));
+            QObject::connect(coms, SIGNAL(receive(QByteArray)), port, SLOT(transmit(QByteArray)));
+            printf("ready.\n");
         }
     }
     
