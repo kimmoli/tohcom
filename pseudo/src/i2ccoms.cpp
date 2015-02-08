@@ -47,7 +47,13 @@ void i2ccoms::transmit(QByteArray data)
 /* Debug interface */
 void i2ccoms::debugCommand(QString cmd)
 {
-    if (cmd.startsWith("udump", Qt::CaseInsensitive))
+    if (cmd.startsWith("help", Qt::CaseInsensitive))
+    {
+        printf("udump       dump uart registers\n");
+        printf("ureset      soft-reset uart\n");
+        printf("uinit       initialize uart\n");
+    }
+    else if (cmd.startsWith("udump", Qt::CaseInsensitive))
     {
         printf("dump uart registers\n");
     }
@@ -57,6 +63,8 @@ void i2ccoms::debugCommand(QString cmd)
     }
     else if (cmd.startsWith("uinit", Qt::CaseInsensitive))
     {
+        uart = new SC16IS850L(0x4A);
+
         if (uart->init())
             printf("init success\n");
         else
@@ -66,5 +74,7 @@ void i2ccoms::debugCommand(QString cmd)
     {
         printf("Unknwon command: %s\n", qPrintable(cmd));
     }
+
+    emit debugCommandFinished();
 }
 

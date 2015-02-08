@@ -15,6 +15,7 @@ public:
 signals:
     void receive(QByteArray data);
     void commsErrorFatal();
+    void debugCommandFinished();
 
 public slots:
     void initComs();

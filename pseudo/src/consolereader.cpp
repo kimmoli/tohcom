@@ -20,15 +20,20 @@ void ConsoleReader::text()
     QString line = qin.readLine();
 
     if (line.isEmpty())
+    {
+        prompt();
         return;
+    }
 
-    if (line.startsWith("quit", Qt::CaseInsensitive))
+    if (line.startsWith("help", Qt::CaseInsensitive))
+    {
+        printf("help        show this help\n");
+        printf("quit        quit tohcom\n");
+        emit uartDebugCommand("help");
+    }
+    else if (line.startsWith("quit", Qt::CaseInsensitive))
     {
         emit wantsToQuit();
-    }
-    else if (line.startsWith("help", Qt::CaseInsensitive))
-    {
-        printf("yeah sure there is help\n");
     }
     else if (line.startsWith("u", Qt::CaseInsensitive))
     {
@@ -37,5 +42,12 @@ void ConsoleReader::text()
     else
     {
         printf("Unknwon command: %s\n", qPrintable(line));
+        prompt();
     }
+}
+
+void ConsoleReader::prompt()
+{
+    printf("> ");
+    fflush(stdout);
 }

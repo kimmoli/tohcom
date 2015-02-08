@@ -145,6 +145,7 @@ int main(int argc, char *argv[])
     {
         app->connect(console, SIGNAL(uartDebugCommand(QString)), coms, SLOT(debugCommand(QString)), Qt::DirectConnection);
         app->connect(console, SIGNAL(wantsToQuit()), app, SLOT(quit()), Qt::DirectConnection);
+        app->connect(coms, SIGNAL(debugCommandFinished()), console, SLOT(prompt()));
 
         port->debugPrints = debugPrints;
         coms->testMode = testMode;
