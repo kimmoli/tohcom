@@ -5,6 +5,8 @@
 #include <fcntl.h>
 #include <sys/select.h>
 #include <errno.h>
+#include <termio.h>
+#include <sys/stat.h>
 
 #include <QThread>
 #include <QFile>
@@ -28,11 +30,18 @@ void pseudoport::create()
 
     fd = ptym_open(master, slave, 1024);
 
+    char mode[] = "0666";
+    int i = strtol(mode, 0, 8);
+    if (chmod (slave, i) < 0)
+        perror("chmod");
+
+    tcflush(fd, TCIOFLUSH);
+
     sn = new QSocketNotifier(fd, QSocketNotifier::Read, this);
     sn->setEnabled(true);
     sn->connect(sn, SIGNAL(activated(int)), this, SLOT(readyRead()));
 
-    printf("Created pseudo-terminal %s\n", slave);
+    printf("Created pseudo-terminal %s (%s)\n", slave, master);
 }
 
 void pseudoport::readyRead()

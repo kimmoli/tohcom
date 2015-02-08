@@ -3,9 +3,18 @@
 #include <QString>
 #include <QProcessEnvironment>
 #include <QThread>
+#include <QFile>
+
+#include <signal.h>
+#include <sys/types.h>
+#include <sys/stat.h>
 
 #include "pseudoport.h"
 #include "i2ccoms.h"
+
+void signalHandler(int sig);
+
+QCoreApplication* app;
 
 int main(int argc, char *argv[])
 {
@@ -27,7 +36,33 @@ int main(int argc, char *argv[])
     }
 #endif
 
-    QCoreApplication app(argc, argv);
+    umask(0);
+
+    signal(SIGCHLD, signalHandler);
+    signal(SIGTSTP, signalHandler);
+    signal(SIGTTOU, signalHandler);
+    signal(SIGTTIN, signalHandler);
+    signal(SIGHUP,  signalHandler);
+    signal(SIGTERM, signalHandler);
+    signal(SIGINT,  signalHandler);
+
+    app = new QCoreApplication(argc, argv);
+
+    qint64 myPid = app->applicationPid();
+
+    QFile* pidfile = new QFile("/tmp/tohcom.lock");
+
+    if (pidfile->open(QIODevice::ReadOnly))
+    {
+        printf("tohcom is already running with pid %s\n", pidfile->readAll().data());
+        return 0;
+    }
+    else
+    {
+        pidfile->open(QIODevice::WriteOnly);
+        pidfile->write(QByteArray(QString("%1").arg(myPid).toLatin1()));
+        pidfile->close();
+    }
 
     setlinebuf(stdout);
     setlinebuf(stderr);
@@ -71,6 +106,26 @@ int main(int argc, char *argv[])
         }
     }
     
-    return app.exec();
+    int i = app->exec();
+
+    pidfile->remove();
+
+    printf("stopping.\n");
+
+    return i;
 }
 
+void signalHandler(int sig)
+{
+    switch(sig)
+    {
+        case SIGHUP:
+        case SIGTERM:
+        case SIGINT:
+            app->quit();
+            break;
+        default:
+            printf("Received signal %d\n", sig);
+            break;
+    }
+}
