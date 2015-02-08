@@ -48,22 +48,6 @@ int main(int argc, char *argv[])
 
     app = new QCoreApplication(argc, argv);
 
-    qint64 myPid = app->applicationPid();
-
-    QFile* pidfile = new QFile("/tmp/tohcom.lock");
-
-    if (pidfile->open(QIODevice::ReadOnly))
-    {
-        printf("tohcom is already running with pid %s\n", pidfile->readAll().data());
-        return EXIT_FAILURE;
-    }
-    else
-    {
-        pidfile->open(QIODevice::WriteOnly);
-        pidfile->write(QByteArray(QString("%1").arg(myPid).toLatin1()));
-        pidfile->close();
-    }
-
     setlinebuf(stdout);
     setlinebuf(stderr);
 
@@ -71,29 +55,20 @@ int main(int argc, char *argv[])
     {
         printf("tohcom version " APPVERSION " (C) kimmoli 2015\n\n");
         printf("Usage:\n");
-        printf("tohcom {options...}\n\n");
+        printf("tohcom {options,...}\n\n");
         printf(" -m              create /dev/pts\n");
-        printf(" -t              do not init uart\n");
+        printf(" -t              do not init uart on start\n");
         printf(" -v              be verbose\n");
+        printf(" -x              force stop of existing tohcom instance\n");
 
-        pidfile->remove();
         return EXIT_FAILURE;
     }
-
-    pseudoport* port = new pseudoport();
-    QThread* t_port = new QThread();
-    port->moveToThread(t_port);
-
-    i2ccoms* coms = new i2ccoms();
-    QThread* t_coms = new QThread();
-    coms->moveToThread(t_coms);
-
-    ConsoleReader* console = new ConsoleReader();
 
     bool debugPrints = false;
     bool doComs = false;
     bool gotArgs = false;
     bool testMode = false;
+    bool forceStop = false;
 
     for (int i=1; i<argc; i++)
     {
@@ -105,6 +80,10 @@ int main(int argc, char *argv[])
         {
             testMode = true;
         }
+        else if (QString(argv[i]).left(2) == "-x")
+        {
+            forceStop = true;
+        }
         else if (QString(argv[i]).left(2) == "-m")
         {
             gotArgs = true;
@@ -115,9 +94,52 @@ int main(int argc, char *argv[])
     if (!gotArgs)
     {
         printf("Insuffucient arguments\n");
-        pidfile->remove();
         return EXIT_FAILURE;
     }
+
+    qint64 myPid = app->applicationPid();
+
+    QFile* pidfile = new QFile("/tmp/tohcom.lock");
+
+    if (pidfile->open(QIODevice::ReadOnly))
+    {
+        int pid = pidfile->readAll().toInt();
+        pidfile->close();
+
+        printf("tohcom is already running with pid %d\n", pid);
+
+        if (!forceStop)
+        {
+            printf("use -x to force stopping of existing\n");
+            return EXIT_FAILURE;
+        }
+
+        if (pid > 0 && kill(pid, 0) == 0)
+        {
+            printf("Sending SIGTERM to pid %d\n", pid);
+            kill(pid, SIGTERM);
+            QThread::msleep(500);
+        }
+        else
+        {
+            printf("Removing lockfile\n");
+            pidfile->remove();
+        }
+    }
+
+    pidfile->open(QIODevice::WriteOnly);
+    pidfile->write(QByteArray(QString("%1").arg(myPid).toLatin1()));
+    pidfile->close();
+
+    pseudoport* port = new pseudoport();
+    QThread* t_port = new QThread();
+    port->moveToThread(t_port);
+
+    i2ccoms* coms = new i2ccoms();
+    QThread* t_coms = new QThread();
+    coms->moveToThread(t_coms);
+
+    ConsoleReader* console = new ConsoleReader();
 
     if (doComs)
     {
