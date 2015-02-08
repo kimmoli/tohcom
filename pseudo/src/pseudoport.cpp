@@ -20,6 +20,7 @@ pseudoport::pseudoport(QObject *parent) :
 
 pseudoport::~pseudoport()
 {
+    snRead->disconnect(snRead, SIGNAL(activated(int)), this, SLOT(handleRead()));
     close(fd);
 }
 
@@ -32,30 +33,37 @@ void pseudoport::create()
 
     char mode[] = "0666";
     int i = strtol(mode, 0, 8);
+
     if (chmod (slave, i) < 0)
-        perror("chmod");
+        perror("create()");
 
     tcflush(fd, TCIOFLUSH);
 
-    sn = new QSocketNotifier(fd, QSocketNotifier::Read, this);
-    sn->setEnabled(true);
-    sn->connect(sn, SIGNAL(activated(int)), this, SLOT(readyRead()));
+    snRead = new QSocketNotifier(fd, QSocketNotifier::Read, this);
+    snRead->setEnabled(true);
+    snRead->connect(snRead, SIGNAL(activated(int)), this, SLOT(handleRead()));
 
     printf("Created pseudo-terminal %s (%s)\n", slave, master);
 }
 
-void pseudoport::readyRead()
+void pseudoport::handleRead()
 {
     char buffer[1024];
     ssize_t rc = read(fd, buffer, 1024);
 
     if (rc < 0)
     {
-        if (errno == EAGAIN || errno == EIO)
+        if (errno == EAGAIN)
             rc = 0;
+        else if (errno == EIO)
+        {
+            perror("handleRead()");
+            respawn();
+            return;
+        }
         else
         {
-            perror("read");
+            perror("handleRead()");
             return;
         }
     }
@@ -69,7 +77,7 @@ void pseudoport::readyRead()
 void pseudoport::transmit(QByteArray data)
 {
     if (write(fd, data.data(), data.count()) < 0)
-        perror("write");
+        perror("transmit()");
 }
 
 int pseudoport::ptym_open(char *pts_name, char *pts_name_s, int pts_namesz)
@@ -106,3 +114,15 @@ int pseudoport::ptym_open(char *pts_name, char *pts_name_s, int pts_namesz)
     return(fdm);
 }
 
+/* This is done in case of EIO, I/O Error */
+void pseudoport::respawn()
+{
+    snRead->disconnect(snRead, SIGNAL(activated(int)), this, SLOT(handleRead()));
+    tcflush(fd, TCIOFLUSH);
+
+    close(fd);
+
+    QThread::msleep(100);
+
+    create();
+}

@@ -5,7 +5,6 @@
 #include <QByteArray>
 #include <QSocketNotifier>
 
-
 class pseudoport : public QObject
 {
     Q_OBJECT
@@ -21,13 +20,12 @@ signals:
 public slots:
     void create();
     void transmit(QByteArray data);
-    void readyRead();
+    void handleRead();
 
 private:
     int fd;
-    QSocketNotifier* sn;
-
-
+    QSocketNotifier* snRead;
+    void respawn();
 };
 
 #endif // PSEUDOPORT_H
