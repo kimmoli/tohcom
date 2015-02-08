@@ -10,8 +10,8 @@ Name:       tohcom
 %{?qtc_builddir:%define _builddir %qtc_builddir}
 
 Summary:    TOHUART Serial Console
-Version:    0.0.1
-Release:    1
+Version:    0.0.2
+Release:    devel
 Group:      Qt/Qt
 License:    LICENSE
 URL:        https://github.com/kimmoli/tohcom
