@@ -11,6 +11,7 @@
 
 #include "pseudoport.h"
 #include "i2ccoms.h"
+#include "consolereader.h"
 
 void signalHandler(int sig);
 
@@ -18,7 +19,7 @@ QCoreApplication* app;
 
 int main(int argc, char *argv[])
 {
-#ifdef REQUIRE_ROOT
+
     bool rootUser = false;
 
     QStringList environment = QProcessEnvironment::systemEnvironment().toStringList();
@@ -32,9 +33,8 @@ int main(int argc, char *argv[])
     if (!rootUser)
     {
         printf("Error: You need to be root to use this utility!\n");
-        return 0;
+        return EXIT_FAILURE;
     }
-#endif
 
     umask(0);
 
@@ -55,7 +55,7 @@ int main(int argc, char *argv[])
     if (pidfile->open(QIODevice::ReadOnly))
     {
         printf("tohcom is already running with pid %s\n", pidfile->readAll().data());
-        return 0;
+        return EXIT_FAILURE;
     }
     else
     {
@@ -73,8 +73,11 @@ int main(int argc, char *argv[])
         printf("Usage:\n");
         printf("tohcom {options...}\n\n");
         printf(" -m              create /dev/pts\n");
+        printf(" -t              do not init uart\n");
         printf(" -v              be verbose\n");
-        return 0;
+
+        pidfile->remove();
+        return EXIT_FAILURE;
     }
 
     pseudoport* port = new pseudoport();
@@ -85,8 +88,12 @@ int main(int argc, char *argv[])
     QThread* t_coms = new QThread();
     coms->moveToThread(t_coms);
 
+    ConsoleReader* console = new ConsoleReader();
+
     bool debugPrints = false;
     bool doComs = false;
+    bool gotArgs = false;
+    bool testMode = false;
 
     for (int i=1; i<argc; i++)
     {
@@ -94,33 +101,57 @@ int main(int argc, char *argv[])
         {
             debugPrints = true;
         }
+        else if (QString(argv[i]).left(2) == "-t")
+        {
+            testMode = true;
+        }
         else if (QString(argv[i]).left(2) == "-m")
         {
+            gotArgs = true;
             doComs = true;
         }
     }
 
+    if (!gotArgs)
+    {
+        printf("Insuffucient arguments\n");
+        pidfile->remove();
+        return EXIT_FAILURE;
+    }
+
     if (doComs)
     {
-        QObject::connect(t_port, SIGNAL(started()), port, SLOT(create()));
+        app->connect(console, SIGNAL(uartDebugCommand(QString)), coms, SLOT(debugCommand(QString)), Qt::DirectConnection);
+        app->connect(console, SIGNAL(wantsToQuit()), app, SLOT(quit()), Qt::DirectConnection);
+
+        port->debugPrints = debugPrints;
+        coms->testMode = testMode;
+
+        /* Connect pseudoport Rx to I2C Tx and I2C Rx to pseudoport Tx */
+        app->connect(port, SIGNAL(receive(QByteArray)), coms, SLOT(transmit(QByteArray)));
+        app->connect(coms, SIGNAL(receive(QByteArray)), port, SLOT(transmit(QByteArray)));
+
+        app->connect(t_coms, SIGNAL(started()), coms, SLOT(initComs()));
+        app->connect(t_port, SIGNAL(started()), port, SLOT(create()));
+
+        /* In case of coms error, just quit threads */
+        app->connect(coms, SIGNAL(commsErrorFatal()), coms, SLOT(deleteLater()), Qt::DirectConnection);
+        app->connect(coms, SIGNAL(destroyed()), port, SLOT(deleteLater()), Qt::DirectConnection);
+        app->connect(coms, SIGNAL(destroyed()), t_coms, SLOT(quit()), Qt::DirectConnection);
+        app->connect(port, SIGNAL(destroyed()), t_port, SLOT(quit()), Qt::DirectConnection);
+
+        /* Quit application when pseudoport gets destroyed */
+        app->connect(port, SIGNAL(destroyed()), app, SLOT(quit()), Qt::DirectConnection);
 
         t_coms->start();
         t_port->start();
-
-        QThread::msleep(10);
-
-        port->debugPrints = debugPrints;
-
-        QObject::connect(port, SIGNAL(receive(QByteArray)), coms, SLOT(transmit(QByteArray)));
-        QObject::connect(coms, SIGNAL(receive(QByteArray)), port, SLOT(transmit(QByteArray)));
-        printf("ready.\n");
     }
     
     int i = app->exec();
 
     pidfile->remove();
 
-    printf("stopping.\n");
+    printf("*stopping*\n");
 
     return i;
 }

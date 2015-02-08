@@ -20,8 +20,14 @@ INSTALLS += target
 SOURCES += src/tohcom.cpp \
     src/driverBase.cpp \
     src/pseudoport.cpp \
-    src/i2ccoms.cpp
+    src/i2ccoms.cpp \
+    src/sc16is850l.cpp \
+    src/interrupt.cpp \
+    src/consolereader.cpp
 	
 HEADERS += src/driverBase.h \
     src/pseudoport.h \
-    src/i2ccoms.h
+    src/i2ccoms.h \
+    src/sc16is850l.h \
+    src/interrupt.h \
+    src/consolereader.h

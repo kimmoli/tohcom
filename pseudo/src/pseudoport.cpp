@@ -26,6 +26,7 @@ pseudoport::pseudoport(QObject *parent) :
 
 pseudoport::~pseudoport()
 {
+    printf("close pseudoport\n");
     snRead->disconnect(snRead, SIGNAL(activated(int)), this, SLOT(handleRead()));
     close(fd);
 }
