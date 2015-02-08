@@ -13,9 +13,15 @@
 
 #include "pseudoport.h"
 
+const char * const ascii[] = { "NUL", "SOH", "STX", "ETX", "EOT", "ENQ", "ACK", "BEL", "BS",
+                               "TAB", "LF", "VT", "FF", "CR", "SO", "SI", "DLE",
+                               "DC1", "DC2", "DC3", "DC4", "NAK", "SYN", "ETB", "CAN",
+                               "EM", "SUB", "ESC", "FS", "GS", "RS", "US" };
+
 pseudoport::pseudoport(QObject *parent) :
     QObject(parent)
 {
+    debugPrints = false;
 }
 
 pseudoport::~pseudoport()
@@ -71,6 +77,16 @@ void pseudoport::handleRead()
     {
         /* we received something, emit it via signal */
         emit receive(QByteArray::fromRawData(buffer, rc));
+
+        if (debugPrints)
+        {
+            for (int x=0; x<rc ; x++)
+            {
+                if (buffer[x] < 32)
+                    printf("%c[%dm%s%c[%dm", 27, 7, ascii[(int)buffer[x]], 27, 0);
+            }
+            fflush(stdout);
+        }
     }
 }
 

@@ -72,8 +72,8 @@ int main(int argc, char *argv[])
         printf("tohcom version " APPVERSION " (C) kimmoli 2015\n\n");
         printf("Usage:\n");
         printf("tohcom {options...}\n\n");
-        printf(" -m              test /dev/pts\n");
-        printf(" -x              do nothing\n");
+        printf(" -m              create /dev/pts\n");
+        printf(" -v              be verbose\n");
         return 0;
     }
 
@@ -85,25 +85,35 @@ int main(int argc, char *argv[])
     QThread* t_coms = new QThread();
     coms->moveToThread(t_coms);
 
+    bool debugPrints = false;
+    bool doComs = false;
+
     for (int i=1; i<argc; i++)
     {
-        if (QString(argv[i]).left(2) == "-x")
+        if (QString(argv[i]).left(2) == "-v")
         {
-            printf("Doing nothing.\n");
+            debugPrints = true;
         }
         else if (QString(argv[i]).left(2) == "-m")
         {
-            QObject::connect(t_port, SIGNAL(started()), port, SLOT(create()));
-
-            t_coms->start();
-            t_port->start();
-
-            QThread::msleep(10);
-
-            QObject::connect(port, SIGNAL(receive(QByteArray)), coms, SLOT(transmit(QByteArray)));
-            QObject::connect(coms, SIGNAL(receive(QByteArray)), port, SLOT(transmit(QByteArray)));
-            printf("ready.\n");
+            doComs = true;
         }
+    }
+
+    if (doComs)
+    {
+        QObject::connect(t_port, SIGNAL(started()), port, SLOT(create()));
+
+        t_coms->start();
+        t_port->start();
+
+        QThread::msleep(10);
+
+        port->debugPrints = debugPrints;
+
+        QObject::connect(port, SIGNAL(receive(QByteArray)), coms, SLOT(transmit(QByteArray)));
+        QObject::connect(coms, SIGNAL(receive(QByteArray)), port, SLOT(transmit(QByteArray)));
+        printf("ready.\n");
     }
     
     int i = app->exec();

@@ -13,6 +13,7 @@ public:
     ~pseudoport();
 
     int ptym_open(char *pts_name, char *pts_name_s , int pts_namesz);
+    bool debugPrints;
 
 signals:
     void receive(QByteArray data);
