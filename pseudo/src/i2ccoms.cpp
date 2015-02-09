@@ -1,3 +1,5 @@
+#include <QStringList>
+
 #include <stdio.h>
 
 #include "i2ccoms.h"
@@ -52,6 +54,7 @@ void i2ccoms::debugCommand(QString cmd)
         printf("udump       dump uart registers\n");
         printf("ureset      soft-reset uart\n");
         printf("uinit       initialize uart\n");
+        printf("ubaud       set baudrate [bps] {xtal}\n");
     }
     else if (cmd.startsWith("udump", Qt::CaseInsensitive))
     {
@@ -69,6 +72,18 @@ void i2ccoms::debugCommand(QString cmd)
             printf("init success\n");
         else
             printf("init failed\n");
+    }
+    else if (cmd.startsWith("ubaud", Qt::CaseInsensitive))
+    {
+        QStringList p = cmd.split(" ");
+
+        unsigned long bps = p.at(1).toLong();
+        unsigned long xtal = 25000000;
+
+        if (p.count()>2)
+            xtal = p.at(2).toLong()
+                    ;
+        uart->setBaudrate(bps, xtal);
     }
     else
     {

@@ -1,5 +1,7 @@
 #include "sc16is850l.h"
+#include "sc16is850l_registers.h"
 #include "driverBase.h"
+#include <math.h>
 
 SC16IS850L::SC16IS850L(unsigned char address)
 {
@@ -60,7 +62,19 @@ void SC16IS850L::processInterrupt()
     printf("got interrupt\n");
 }
 
+/* Calculate and set uart baudrate */
+void SC16IS850L::setBaudrate(unsigned long bps, unsigned long xtal)
+{
+    double divisor = (double)xtal/(double)(bps*16.0);
+    int N = (int)floor(divisor);
+    double tmp;
+    int M = (int)round( modf(divisor, &tmp) *16);
+    double actual = (double)xtal/( 16.0*((double)N+(double)M/16.0) );
 
+    printf("bps %lu xtal %lu\n", bps, xtal);
+    printf("divisor %f N %d M %d\n", divisor, N, M);
+    printf("actual %f\n", actual);
+}
 
 
 /* Control TOH VDD */

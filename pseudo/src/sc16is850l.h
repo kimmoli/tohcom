@@ -16,6 +16,8 @@ public:
     bool init();
     bool initOk;
 
+    void setBaudrate(unsigned long bps, unsigned long xtal);
+
 signals:
 
 public slots:
