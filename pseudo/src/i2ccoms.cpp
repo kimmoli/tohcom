@@ -5,7 +5,7 @@
 #include "i2ccoms.h"
 
 i2ccoms::i2ccoms(QObject *parent) :
-    QObject(parent)
+    QObject(parent), uart(NULL)
 {
     testMode = false;
 }
@@ -54,7 +54,8 @@ void i2ccoms::debugCommand(QString cmd)
         printf("udump       dump uart registers\n");
         printf("ureset      soft-reset uart\n");
         printf("uinit       initialize uart\n");
-        printf("ubaud       set baudrate [bps] {xtal}\n");
+        printf("ukill       shutdown uart\n");
+        printf("ubaud       set baudrate {bps(115200)} {xtal(25000000)}\n");
     }
     else if (cmd.startsWith("udump", Qt::CaseInsensitive))
     {
@@ -64,8 +65,14 @@ void i2ccoms::debugCommand(QString cmd)
     {
         printf("soft reset uart\n");
     }
+    else if (cmd.startsWith("ukill", Qt::CaseInsensitive))
+    {
+        delete(uart);
+        uart = NULL;
+    }
     else if (cmd.startsWith("uinit", Qt::CaseInsensitive))
     {
+        delete(uart);
         uart = new SC16IS850L(0x4A);
 
         if (uart->init())
@@ -77,13 +84,17 @@ void i2ccoms::debugCommand(QString cmd)
     {
         QStringList p = cmd.split(" ");
 
-        unsigned long bps = p.at(1).toLong();
-        unsigned long xtal = 25000000;
-
-        if (p.count()>2)
-            xtal = p.at(2).toLong()
-                    ;
-        uart->setBaudrate(bps, xtal);
+        if (uart)
+        {
+            if (p.count() == 1)
+                uart->setBaudrate();
+            else if (p.count() == 2)
+                uart->setBaudrate(p.at(1).toLong());
+            else if (p.count() > 2)
+                uart->setBaudrate(p.at(1).toLong(), p.at(2).toLong());
+        }
+        else
+            printf("uart not initialized\n");
     }
     else
     {

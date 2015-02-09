@@ -5,6 +5,7 @@
 
 #include "driverBase.h"
 #include "interrupt.h"
+#include "sc16is850l_registers.h"
 
 class SC16IS850L : public DriverBase
 {
@@ -16,7 +17,9 @@ public:
     bool init();
     bool initOk;
 
-    void setBaudrate(unsigned long bps, unsigned long xtal);
+    void setBaudrate(unsigned long bps = 115200, unsigned long xtal = 25000000);
+    void setLineparams(int parity = PARITY_NONE, int stop = STOP_1, int wordlen = WORDLEN_8);
+    void transmit(QByteArray data);
 
 signals:
 
