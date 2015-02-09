@@ -65,6 +65,11 @@ bool DriverBase::i2cRead(int file, char buffer[], int howManyBytesToRead)
     return true;
 }
 
+bool DriverBase::writeBytes(unsigned char address, QByteArray bytes)
+{
+    return writeBytes(address, bytes.data(), bytes.count());
+}
+
 bool DriverBase::writeBytes(unsigned char address, char bytes[], int length)
 {
     // try to open the device

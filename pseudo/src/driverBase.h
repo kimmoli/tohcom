@@ -38,6 +38,8 @@ public:
 
     // write given bytes to specified address
     bool writeBytes(unsigned char address, char bytes[], int length);
+    // overloaded function to support QByteArray
+    bool writeBytes(unsigned char address, QByteArray bytes);
 
     // read specified amount of bytes
     QByteArray readBytes(unsigned char address, int howManyBytesToRead);
