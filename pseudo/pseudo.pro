@@ -30,4 +30,5 @@ HEADERS += src/driverBase.h \
     src/i2ccoms.h \
     src/sc16is850l.h \
     src/interrupt.h \
-    src/consolereader.h
+    src/consolereader.h \
+    src/sc16is850l_registers.h
