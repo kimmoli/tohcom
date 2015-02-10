@@ -12,6 +12,7 @@
 #include <QFile>
 
 #include "pseudoport.h"
+#include "sc16is850l_registers.h"
 
 const char * const ascii[] = { "NUL", "SOH", "STX", "ETX", "EOT", "ENQ", "ACK", "BEL", "BS",
                                "TAB", "LF", "VT", "FF", "CR", "SO", "SI", "DLE",
@@ -147,9 +148,68 @@ void pseudoport::processControlByte(const char c)
             printf("c_oflag  = %06x\n", params.c_oflag);
             printf("c_cflag  = %06x\n", params.c_cflag);
             printf("c_lflag  = %06x\n", params.c_lflag);
-            printf("c_ispeed = %06x\n", params.c_ispeed);
-            printf("c_ospeed = %06x\n", params.c_ospeed);
+            printf("c_ispeed = %o\n", params.c_ispeed);
         }
+
+        unsigned long bps = 0;
+        int parity = PARITY_NONE;
+        int wordlen = WORDLEN_8;
+        int stop = STOP_1;
+
+        switch (params.c_ispeed)
+        {
+            case B300:    bps = 300;   break;
+            case B600:    bps = 600;   break;
+            case B1200:   bps = 1200;   break;
+            case B2400:   bps = 2400;   break;
+            case B4800:   bps = 4800;   break;
+            case B9600:   bps = 9600;   break;
+            case B19200:  bps = 19200;  break;
+            case B38400:  bps = 38400;  break;
+            case B57600:  bps = 57600;  break;
+            case B115200: bps = 15200;  break;
+            case B230400: bps = 230400; break;
+            case B460800: bps = 460800; break;
+            case B921600: bps = 921600; break;
+            default: break;
+        }
+
+        switch (params.c_cflag & CSIZE)
+        {
+            case CS5: wordlen = WORDLEN_5; break;
+            case CS6: wordlen = WORDLEN_6; break;
+            case CS7: wordlen = WORDLEN_7; break;
+            case CS8: wordlen = WORDLEN_8; break;
+            default: break;
+        }
+
+        if (params.c_cflag & PARENB)
+        {
+            if (params.c_cflag & PARODD)
+            {
+                parity = PARITY_ODD;
+            }
+            else
+            {
+                parity = PARITY_EVEN;
+            }
+        }
+
+        if (params.c_cflag & CSTOPB)
+        {
+            stop = STOP_2;
+        }
+
+        if (bps != 0)
+        {
+            printf("settings: %ld,%s,%d,%d\n", bps, (parity == PARITY_ODD) ? "n" :
+                                                ((parity == PARITY_EVEN) ? "e" : "n"), wordlen+5, stop == STOP_2 ? 2 : 1);
+        }
+        else
+        {
+            printf("non-supported baudrate\n");
+        }
+
     }
 }
 
