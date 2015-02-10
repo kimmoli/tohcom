@@ -9,7 +9,7 @@ CONFIG += console
 CONFIG -= app_bundle
 QT -= gui
 
-DEFINES += VERSION_STR=\\\"1.7\\\"
+DEFINES += VERSION_STR=\\\"1.7.1\\\"
 # DEFINES += UUCP_LOCK_DIR=\\\"/var/lock\\\"
 DEFINES += HIGH_BAUD
 

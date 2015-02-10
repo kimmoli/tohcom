@@ -46,6 +46,12 @@ void i2ccoms::transmit(QByteArray data)
     emit receive(data);
 }
 
+void i2ccoms::changeBaudrate(unsigned long bps)
+{
+    if (uart)
+        uart->setBaudrate(bps);
+}
+
 /* Debug interface */
 void i2ccoms::debugCommand(QString cmd)
 {

@@ -21,6 +21,7 @@ public slots:
     void initComs();
     void transmit(QByteArray data);
     void debugCommand(QString cmd);
+    void changeBaudrate(unsigned long bps);
 
 private:
     SC16IS850L* uart;

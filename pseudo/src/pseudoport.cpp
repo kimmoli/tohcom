@@ -171,7 +171,10 @@ void pseudoport::processControlByte(const char c)
         /* pseudo-terminal supports only baudrate, parity and other bits are not possible to change */
 
         if (bps != 0)
+        {
             printf("baudrate changed to %ld\n", bps);
+            emit changeBaudrate(bps);
+        }
         else
             printf("non-supported baudrate\n");
     }

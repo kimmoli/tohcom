@@ -17,6 +17,7 @@ public:
 
 signals:
     void receive(QByteArray data);
+    void changeBaudrate(unsigned long bps);
 
 public slots:
     void create();

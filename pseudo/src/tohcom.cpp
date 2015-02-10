@@ -154,6 +154,8 @@ int main(int argc, char *argv[])
         app->connect(port, SIGNAL(receive(QByteArray)), coms, SLOT(transmit(QByteArray)));
         app->connect(coms, SIGNAL(receive(QByteArray)), port, SLOT(transmit(QByteArray)));
 
+        app->connect(port, SIGNAL(changeBaudrate(ulong)), coms, SLOT(changeBaudrate(ulong)));
+
         app->connect(t_coms, SIGNAL(started()), coms, SLOT(initComs()));
         app->connect(t_port, SIGNAL(started()), port, SLOT(create()));
 
