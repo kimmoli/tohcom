@@ -328,7 +328,7 @@ fatal (const char *format, ...)
 	exit(EXIT_FAILURE);
 }
 
-#define cput(fd, c) do { int cl = c; write((fd), &(cl), 1); } while(0)
+#define cput(fd, c) do { int cl = c; int wrc = write((fd), &(cl), 1); (void) wrc; } while(0)
 
 int
 fd_readline (int fdi, int fdo, char *b, int bsz)
@@ -547,6 +547,7 @@ bits_next (int bits)
 void
 child_empty_handler (int signum)
 {
+    (void) signum;
 }
 
 void
@@ -889,6 +890,8 @@ loop(void)
 void
 deadly_handler(int signum)
 {
+    (void) signum;
+
 	kill(0, SIGTERM);
 	sleep(1);
 #ifdef UUCP_LOCK_DIR
