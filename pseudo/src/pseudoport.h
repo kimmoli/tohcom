@@ -27,6 +27,7 @@ private:
     int fd;
     QSocketNotifier* snRead;
     void respawn();
+    void processControlByte(const char c);
 };
 
 #endif // PSEUDOPORT_H

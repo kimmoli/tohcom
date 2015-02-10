@@ -44,6 +44,21 @@ void pseudoport::create()
     if (chmod (slave, i) < 0)
         perror("create()");
 
+    /* Set to packet mode */
+    int arg = 1;
+    ioctl(fd, TIOCPKT, &arg);
+
+    struct termios params;
+
+    tcgetattr(fd, &params);
+    cfmakeraw(&params);
+    cfsetispeed(&params, B9600);
+    cfsetospeed(&params, B9600);
+    params.c_cflag |= (B9600 |CS8 | CLOCAL | CREAD);
+    /* Set EXTPROC to get IOCTL */
+    params.c_lflag |= EXTPROC;
+    tcsetattr(fd, TCSANOW, &params);
+
     tcflush(fd, TCIOFLUSH);
 
     snRead = new QSocketNotifier(fd, QSocketNotifier::Read, this);
@@ -76,17 +91,64 @@ void pseudoport::handleRead()
     }
     if (rc > 0)
     {
-        /* we received something, emit it via signal */
-        emit receive(QByteArray::fromRawData(buffer, rc));
+        if (buffer[0] != TIOCPKT_DATA)
+        {
+            /* We got something else than data
+             * discard possible data and process the control byte */
+            processControlByte(buffer[0]);
+        }
+        else
+        {
+            /* we received data, remove control byte and emit rest via signal */
+            emit receive(QByteArray::fromRawData(buffer, rc).remove(0, 1));
+        }
 
         if (debugPrints)
         {
-            for (int x=0; x<rc ; x++)
+            printf("received %d:", rc);
+            for (int x=1; x<rc ; x++)
             {
                 if (buffer[x] < 32)
-                    printf("%c[%dm%s%c[%dm", 27, 7, ascii[(int)buffer[x]], 27, 0);
+                    printf(" %c[%dm%s%c[%dm ", 27, 7, ascii[(int)buffer[x]], 27, 0);
+                else
+                    printf("%c", buffer[x]);
             }
-            fflush(stdout);
+            printf("\n");
+        }
+    }
+}
+
+void pseudoport::processControlByte(const char c)
+{
+    if (debugPrints)
+    {
+        printf("TIOCPKT");
+        if (c & TIOCPKT_DOSTOP)     printf("_DOSTOP");
+        if (c & TIOCPKT_FLUSHREAD)  printf("_FLUSHREAD");
+        if (c & TIOCPKT_FLUSHWRITE) printf("_FLUSHWRITE");
+        if (c & TIOCPKT_IOCTL)      printf("_IOCTL");
+        if (c & TIOCPKT_NOSTOP)     printf("_NOSTOP");
+        if (c & TIOCPKT_START)      printf("_START");
+        if (c & TIOCPKT_STOP)       printf("_STOP");
+        printf("\n");
+    }
+
+    /* At this age, we are interested in TIOCPKT_IOCTL only */
+    if (c & TIOCPKT_IOCTL)
+    {
+        tcflush(fd, TCIOFLUSH);
+
+        struct termios params;
+        tcgetattr(fd, &params);
+
+        if (debugPrints)
+        {
+            printf("c_iflag  = %06x\n", params.c_iflag);
+            printf("c_oflag  = %06x\n", params.c_oflag);
+            printf("c_cflag  = %06x\n", params.c_cflag);
+            printf("c_lflag  = %06x\n", params.c_lflag);
+            printf("c_ispeed = %06x\n", params.c_ispeed);
+            printf("c_ospeed = %06x\n", params.c_ospeed);
         }
     }
 }
