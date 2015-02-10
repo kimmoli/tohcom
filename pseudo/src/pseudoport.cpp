@@ -161,7 +161,7 @@ void pseudoport::processControlByte(const char c)
             case B19200:  bps = 19200;  break;
             case B38400:  bps = 38400;  break;
             case B57600:  bps = 57600;  break;
-            case B115200: bps = 15200;  break;
+            case B115200: bps = 115200; break;
             case B230400: bps = 230400; break;
             case B460800: bps = 460800; break;
             case B921600: bps = 921600; break;
