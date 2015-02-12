@@ -16,7 +16,7 @@ signals:
 
 public slots:
     void text();
-    void prompt();
+    void prompt(bool unknown);
 
 private:
     QSocketNotifier notifier;

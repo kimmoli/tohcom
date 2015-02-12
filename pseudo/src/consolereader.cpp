@@ -21,7 +21,7 @@ void ConsoleReader::text()
 
     if (line.isEmpty())
     {
-        prompt();
+        prompt(false);
         return;
     }
 
@@ -29,25 +29,20 @@ void ConsoleReader::text()
     {
         printf("help        show this help\n");
         printf("quit        quit tohcom\n");
-        emit uartDebugCommand("help");
     }
     else if (line.startsWith("quit", Qt::CaseInsensitive))
     {
         emit wantsToQuit();
+        return;
     }
-    else if (line.startsWith("u", Qt::CaseInsensitive))
-    {
-        emit uartDebugCommand(line);
-    }
-    else
-    {
-        printf("Unknwon command: %s\n", qPrintable(line));
-        prompt();
-    }
+
+    emit uartDebugCommand(line);
 }
 
-void ConsoleReader::prompt()
+void ConsoleReader::prompt(bool unknown)
 {
+    if (unknown)
+        printf("Unknown command\n");
     printf("> ");
     fflush(stdout);
 }

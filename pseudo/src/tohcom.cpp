@@ -145,10 +145,11 @@ int main(int argc, char *argv[])
     {
         app->connect(console, SIGNAL(uartDebugCommand(QString)), coms, SLOT(debugCommand(QString)), Qt::DirectConnection);
         app->connect(console, SIGNAL(wantsToQuit()), app, SLOT(quit()), Qt::DirectConnection);
-        app->connect(coms, SIGNAL(debugCommandFinished()), console, SLOT(prompt()));
+        app->connect(coms, SIGNAL(debugCommandFinished(bool)), console, SLOT(prompt(bool)));
 
         port->debugPrints = debugPrints;
         coms->testMode = testMode;
+        coms->debugPrints = debugPrints;
 
         /* Connect pseudoport Rx to I2C Tx and I2C Rx to pseudoport Tx */
         app->connect(port, SIGNAL(receive(QByteArray)), coms, SLOT(transmit(QByteArray)));

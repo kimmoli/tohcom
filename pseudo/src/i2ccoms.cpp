@@ -8,6 +8,7 @@ i2ccoms::i2ccoms(QObject *parent) :
     QObject(parent), uart(NULL)
 {
     testMode = false;
+    debugPrints = false;
 }
 
 i2ccoms::~i2ccoms()
@@ -38,9 +39,16 @@ void i2ccoms::initComs()
 
 void i2ccoms::transmit(QByteArray data)
 {
-    /* This should transmit 'data' over i2c to uart */
-    printf("%s", data.data());
-    fflush(stdout);
+    /* Transmit 'data' over i2c to uart */
+
+    if (debugPrints)
+    {
+        printf("%s", data.data());
+        fflush(stdout);
+    }
+
+    if (uart)
+        uart->transmit(data);
 
     /* just echo back */
     emit receive(data);
@@ -55,28 +63,31 @@ void i2ccoms::changeBaudrate(unsigned long bps)
 /* Debug interface */
 void i2ccoms::debugCommand(QString cmd)
 {
+    bool unknown = false;
+
     if (cmd.startsWith("help", Qt::CaseInsensitive))
     {
-        printf("udump       dump uart registers\n");
-        printf("ureset      soft-reset uart\n");
-        printf("uinit       initialize uart\n");
-        printf("ukill       shutdown uart\n");
-        printf("ubaud       set baudrate {bps(115200)} {xtal(25000000)}\n");
+        printf("dump        dump uart registers\n");
+        printf("reset       soft-reset uart\n");
+        printf("init        initialize uart\n");
+        printf("kill        shutdown uart\n");
+        printf("baud        set baudrate {bps(115200)} {xtal(25000000)}\n");
+        printf("send        send string over uart {string ...}\n");
     }
-    else if (cmd.startsWith("udump", Qt::CaseInsensitive))
+    else if (cmd.startsWith("dump", Qt::CaseInsensitive))
     {
         printf("dump uart registers\n");
     }
-    else if (cmd.startsWith("ureset", Qt::CaseInsensitive))
+    else if (cmd.startsWith("reset", Qt::CaseInsensitive))
     {
         printf("soft reset uart\n");
     }
-    else if (cmd.startsWith("ukill", Qt::CaseInsensitive))
+    else if (cmd.startsWith("kill", Qt::CaseInsensitive))
     {
         delete(uart);
         uart = NULL;
     }
-    else if (cmd.startsWith("uinit", Qt::CaseInsensitive))
+    else if (cmd.startsWith("init", Qt::CaseInsensitive))
     {
         delete(uart);
         uart = new SC16IS850L(0x4A);
@@ -86,12 +97,12 @@ void i2ccoms::debugCommand(QString cmd)
         else
             printf("init failed\n");
     }
-    else if (cmd.startsWith("ubaud", Qt::CaseInsensitive))
+    else if (cmd.startsWith("baud", Qt::CaseInsensitive))
     {
-        QStringList p = cmd.split(" ");
-
         if (uart)
         {
+            QStringList p = cmd.split(" ");
+
             if (p.count() == 1)
                 uart->setBaudrate();
             else if (p.count() == 2)
@@ -102,11 +113,24 @@ void i2ccoms::debugCommand(QString cmd)
         else
             printf("uart not initialized\n");
     }
+    else if (cmd.startsWith("send", Qt::CaseInsensitive))
+    {
+        if (uart)
+        {
+            QStringList p = cmd.split(" ");
+            p.removeFirst();
+            if (!p.empty())
+            {
+                uart->transmit(p.join(" ").toLocal8Bit());
+            }
+        }
+        else
+            printf("uart not initialized\n");
+    }
     else
     {
-        printf("Unknwon command: %s\n", qPrintable(cmd));
+        unknown = true;
     }
 
-    emit debugCommandFinished();
+    emit debugCommandFinished(unknown);
 }
-

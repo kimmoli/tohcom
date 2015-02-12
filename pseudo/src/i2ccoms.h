@@ -11,11 +11,12 @@ public:
     explicit i2ccoms(QObject *parent = 0);
     ~i2ccoms();
     bool testMode;
+    bool debugPrints;
 
 signals:
     void receive(QByteArray data);
     void commsErrorFatal();
-    void debugCommandFinished();
+    void debugCommandFinished(bool unknown);
 
 public slots:
     void initComs();
@@ -25,7 +26,6 @@ public slots:
 
 private:
     SC16IS850L* uart;
-
 };
 
 #endif // I2CCOMS_H
