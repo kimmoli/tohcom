@@ -8,10 +8,12 @@ TEMPLATE = app
 CONFIG += console
 CONFIG -= app_bundle
 QT -= gui
+QT += dbus
 
-DEFINES += VERSION_STR=\\\"1.7.1\\\"
+DEFINES += VERSION_STR=\\\"1.7.2\\\"
 # DEFINES += UUCP_LOCK_DIR=\\\"/var/lock\\\"
 DEFINES += HIGH_BAUD
+DEFINES += TOHCOM
 
 message($${DEFINES})
 

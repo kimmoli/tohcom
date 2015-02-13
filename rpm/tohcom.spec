@@ -18,6 +18,7 @@ URL:        https://github.com/kimmoli/tohcom
 Source0:    %{name}-%{version}.tar.bz2
 
 BuildRequires:  pkgconfig(Qt5Core)
+BuildRequires:  pkgconfig(Qt5DBus)
 
 %description
 Serial Console for TOHUART, TheOtherHalf UART

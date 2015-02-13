@@ -16,6 +16,7 @@ signals:
 
 public slots:
     void text();
+    void processCommandLine(QString line);
     void prompt(bool unknown);
 
 private:

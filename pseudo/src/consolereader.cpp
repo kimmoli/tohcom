@@ -17,8 +17,11 @@ ConsoleReader::ConsoleReader(QObject *parent) :
 void ConsoleReader::text()
 {
     QTextStream qin(stdin);
-    QString line = qin.readLine();
+    processCommandLine(qin.readLine());
+}
 
+void ConsoleReader::processCommandLine(QString line)
+{
     if (line.isEmpty())
     {
         prompt(false);

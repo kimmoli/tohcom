@@ -12,6 +12,8 @@
 #include "pseudoport.h"
 #include "i2ccoms.h"
 #include "consolereader.h"
+#include "tohcomdbus.h"
+#include "adaptor.h"
 
 void signalHandler(int sig);
 
@@ -141,11 +143,18 @@ int main(int argc, char *argv[])
 
     ConsoleReader* console = new ConsoleReader();
 
+    TohcomDBus adaptor;
+    new TohcomAdaptor(&adaptor);
+
     if (doComs)
     {
+        adaptor.registerDBus();
+
         app->connect(console, SIGNAL(uartDebugCommand(QString)), coms, SLOT(debugCommand(QString)), Qt::DirectConnection);
         app->connect(console, SIGNAL(wantsToQuit()), app, SLOT(quit()), Qt::DirectConnection);
         app->connect(coms, SIGNAL(debugCommandFinished(bool)), console, SLOT(prompt(bool)));
+
+        app->connect(&adaptor, SIGNAL(commandFromDbus(QString)), console, SLOT(processCommandLine(QString)));
 
         port->debugPrints = debugPrints;
         coms->testMode = testMode;
