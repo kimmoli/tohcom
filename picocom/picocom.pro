@@ -21,8 +21,10 @@ target.path = /usr/bin/
 
 INSTALLS += target
 
-SOURCES += src/picocom.c \
-    src/term.c
+SOURCES += \
+    src/term.c \
+    src/picocom.cpp
 	
-HEADERS += src/term.h
+HEADERS += src/term.h \
+    src/picocom.h
 
