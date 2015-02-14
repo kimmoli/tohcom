@@ -21,6 +21,11 @@ public:
     void setLineparams(int parity = PARITY_NONE, int stop = STOP_1, int wordlen = WORDLEN_8);
     void transmit(QByteArray data);
 
+    int baud;
+    int parity;
+    int stop;
+    int wordlen;
+
 signals:
 
 public slots:

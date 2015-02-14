@@ -14,6 +14,7 @@ public:
 
     int ptym_open(char *pts_name, char *pts_name_s , int pts_namesz);
     bool debugPrints;
+    bool useIoctl;
 
 signals:
     void receive(QByteArray data);
@@ -28,6 +29,7 @@ private:
     int fd;
     QSocketNotifier* snRead;
     void respawn();
+
     void processControlByte(const char c);
 };
 

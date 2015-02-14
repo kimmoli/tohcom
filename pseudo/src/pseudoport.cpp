@@ -23,6 +23,7 @@ pseudoport::pseudoport(QObject *parent) :
     QObject(parent)
 {
     debugPrints = false;
+    useIoctl = false;
 }
 
 pseudoport::~pseudoport()
@@ -89,13 +90,13 @@ void pseudoport::handleRead()
     }
     if (rc > 0)
     {
-        if (buffer[0] != TIOCPKT_DATA)
+        if (buffer[0] != TIOCPKT_DATA && useIoctl)
         {
             /* We got something else than data
              * discard possible data and process the control byte */
             processControlByte(buffer[0]);
         }
-        else
+        else if (rc > 1)
         {
             /* we received data, remove control byte and emit rest via signal */
             emit receive(QByteArray::fromRawData(buffer, rc).remove(0, 1));
@@ -104,7 +105,7 @@ void pseudoport::handleRead()
         if (debugPrints)
         {
             printf("received %d:", rc);
-            for (int x=1; x<rc ; x++)
+            for (int x=0; x<rc ; x++)
             {
                 if (buffer[x] < 32)
                     printf(" %c[%dm%s%c[%dm ", 27, 7, ascii[(int)buffer[x]], 27, 0);

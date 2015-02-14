@@ -71,8 +71,13 @@ void i2ccoms::debugCommand(QString cmd)
         printf("reset       soft-reset uart\n");
         printf("init        initialize uart\n");
         printf("kill        shutdown uart\n");
-        printf("baud        set baudrate {bps(115200)} {xtal(25000000)}\n");
+        printf("show        show current line settings\n");
+        printf("baud        set baudrate bps {xtal(25000000)}\n");
         printf("send        send string over uart {string ...}\n");
+        printf("parity      set parity: none, even, odd\n");
+        printf("bits        set word length: 5, 6, 7 ,8\n");
+        printf("stop        set stop bits: 1, 2\n");
+        printf("flow        set flow-control: none, RTS/CTS, xon/xoff\n");
     }
     else if (cmd.startsWith("dump", Qt::CaseInsensitive))
     {
@@ -97,21 +102,107 @@ void i2ccoms::debugCommand(QString cmd)
         else
             printf("init failed\n");
     }
+    else if (cmd.startsWith("show", Qt::CaseInsensitive))
+    {
+        if (uart)
+            printf("%d,%s,%d,%d %s\n", uart->baud,
+                   (uart->parity == PARITY_NONE) ? "n" : ((uart->parity == PARITY_EVEN) ? "e" : "o"),
+                   uart->wordlen + 5,
+                   uart->stop == STOP_1 ? 1 : 2,
+                   uart->initOk ? "" : "(not initialized properly)");
+        else
+            printf("uart not initialized\n");
+
+    }
     else if (cmd.startsWith("baud", Qt::CaseInsensitive))
     {
         if (uart)
         {
             QStringList p = cmd.split(" ");
 
-            if (p.count() == 1)
-                uart->setBaudrate();
-            else if (p.count() == 2)
+            if (p.count() == 2)
                 uart->setBaudrate(p.at(1).toLong());
-            else if (p.count() > 2)
+            else if (p.count() == 3)
                 uart->setBaudrate(p.at(1).toLong(), p.at(2).toLong());
+            else
+                printf("Baudrate is %d\n", uart->baud);
         }
         else
             printf("uart not initialized\n");
+    }
+    else if (cmd.startsWith("parity", Qt::CaseInsensitive))
+    {
+        if (uart)
+        {
+            QStringList p = cmd.split(" ");
+
+            if (p.count() == 2)
+            {
+                if (p.at(1).startsWith("n"))
+                    uart->setLineparams(PARITY_NONE, uart->stop, uart->wordlen);
+                else if (p.at(1).startsWith("e"))
+                    uart->setLineparams(PARITY_EVEN, uart->stop, uart->wordlen);
+                else if (p.at(1).startsWith("o"))
+                    uart->setLineparams(PARITY_ODD, uart->stop, uart->wordlen);
+                else
+                    printf("illegal value\n");
+            }
+            else
+                printf("Parity is %s\n", (uart->parity == PARITY_NONE) ? "none"
+                                        : ((uart->parity == PARITY_EVEN) ? "even" : "odd"));
+        }
+        else
+            printf("uart not initialized\n");
+    }
+    else if (cmd.startsWith("bits", Qt::CaseInsensitive))
+    {
+        if (uart)
+        {
+            QStringList p = cmd.split(" ");
+
+            if (p.count() == 2)
+            {
+                if (p.at(1).toInt() == 5)
+                    uart->setLineparams(uart->parity, uart->stop, WORDLEN_5);
+                else if (p.at(1).toInt() == 6)
+                    uart->setLineparams(uart->parity, uart->stop, WORDLEN_6);
+                else if (p.at(1).toInt() == 7)
+                    uart->setLineparams(uart->parity, uart->stop, WORDLEN_7);
+                else if (p.at(1).toInt() == 8)
+                    uart->setLineparams(uart->parity, uart->stop, WORDLEN_8);
+                else
+                    printf("illegal value\n");
+            }
+            else
+                printf("Wordlength is %d\n", uart->wordlen + 5);
+        }
+        else
+            printf("uart not initialized\n");
+    }
+    else if (cmd.startsWith("stop", Qt::CaseInsensitive))
+    {
+        if (uart)
+        {
+            QStringList p = cmd.split(" ");
+
+            if (p.count() == 2)
+            {
+                if (p.at(1).toInt() == 1)
+                    uart->setLineparams(uart->parity, STOP_1, uart->wordlen);
+                else if (p.at(1).toInt() == 2)
+                    uart->setLineparams(uart->parity, STOP_2, uart->wordlen);
+                else
+                    printf("illegal value\n");
+            }
+            else
+                printf("Stop bits %d\n", uart->stop == STOP_1 ? 1 : 2);
+        }
+        else
+            printf("uart not initialized\n");
+    }
+    else if (cmd.startsWith("flow", Qt::CaseInsensitive))
+    {
+        printf("flow-control not implemented\n");
     }
     else if (cmd.startsWith("send", Qt::CaseInsensitive))
     {

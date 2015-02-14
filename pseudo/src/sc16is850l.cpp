@@ -5,6 +5,12 @@
 SC16IS850L::SC16IS850L(unsigned char address) : m_address(address)
 {
     printf("start SC16IS850L, address 0x%02x\n", address);
+
+    baud = 115200;
+    parity = PARITY_NONE;
+    stop = STOP_1;
+    wordlen = WORDLEN_8;
+
     initOk = false;
 }
 
@@ -140,6 +146,10 @@ void SC16IS850L::setBaudrate(unsigned long bps, unsigned long xtal)
 void SC16IS850L::setLineparams(int parity, int stop, int wordlen)
 {
     writeBytes(m_address, QByteArray().append(GR_LCR).append(parity | stop | wordlen));
+
+    this->stop = stop;
+    this->parity = parity;
+    this->wordlen = wordlen;
 }
 
 /* Transmit bytes */

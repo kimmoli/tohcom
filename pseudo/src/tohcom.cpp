@@ -58,9 +58,10 @@ int main(int argc, char *argv[])
         printf("tohcom version " APPVERSION " (C) kimmoli 2015\n\n");
         printf("Usage:\n");
         printf("tohcom {options,...}\n\n");
-        printf(" -m              create /dev/pts\n");
+        printf(" -m              create /dev/pts (required)\n");
         printf(" -t              do not init uart on start\n");
         printf(" -v              be verbose\n");
+        printf(" -i              use IOCTL from terminal to change baudrate\n");
         printf(" -x              force stop of existing tohcom instance\n");
 
         return EXIT_FAILURE;
@@ -71,6 +72,7 @@ int main(int argc, char *argv[])
     bool gotArgs = false;
     bool testMode = false;
     bool forceStop = false;
+    bool useIoctl = false;
 
     for (int i=1; i<argc; i++)
     {
@@ -85,6 +87,10 @@ int main(int argc, char *argv[])
         else if (QString(argv[i]).left(2) == "-x")
         {
             forceStop = true;
+        }
+        else if (QString(argv[i]).left(2) == "-i")
+        {
+            useIoctl = true;
         }
         else if (QString(argv[i]).left(2) == "-m")
         {
@@ -157,6 +163,7 @@ int main(int argc, char *argv[])
         app->connect(&adaptor, SIGNAL(commandFromDbus(QString)), console, SLOT(processCommandLine(QString)));
 
         port->debugPrints = debugPrints;
+        port->useIoctl = useIoctl;
         coms->testMode = testMode;
         coms->debugPrints = debugPrints;
 
