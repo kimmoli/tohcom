@@ -16,11 +16,9 @@
 #include <sys/wait.h>
 #include <limits.h>
 
-#include <QtCore/QCoreApplication>
-#include <QString>
-#include <QtDBus/QtDBus>
-
 #include <getopt.h>
+
+#include <QObject>
 
 extern "C"
 {
@@ -91,13 +89,20 @@ struct Opts
     int emap;
 };
 
-class Picocom
+class Picocom : public QObject
 {
+    Q_OBJECT
 public:
-    Picocom(int argc, char *argv[]);
+    Picocom();
     ~Picocom();
 
-    void loop(void);
+    bool init(int argc, char *argv[]);
+
+signals:
+    void wantsToQuit();
+
+public slots:
+    void loop();
 
 private:
     Opts opts;
@@ -113,11 +118,11 @@ private:
     int fd_readline (int fdi, int fdo, char *b, int bsz);
     int do_map (char *b, int map, char c);
     void map_and_write (int fd, int map, char c);
-    int baud_up (int baud);
-    int baud_down (int baud);
-    flowcntrl_e flow_next(flowcntrl_e flow, char **flow_str);
-    parity_e parity_next(parity_e parity, char **parity_str);
-    int bits_next (int bits);
+    void baud_up();
+    void baud_down ();
+    void flow_next();
+    void parity_next();
+    void bits_next ();
     //void child_empty_handler (int signum);
     void establish_child_signal_handlers (void);
     int run_cmd(int fd, ...);

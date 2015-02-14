@@ -1,7 +1,12 @@
 #include "picocom.h"
 
+#include <QThread>
+#include <QtCore/QCoreApplication>
+#include <QString>
+#include <QtDBus/QtDBus>
+
 /* Constructor */
-Picocom::Picocom(int argc, char *argv[])
+Picocom::Picocom()
 {
     /* Some defaults*/
 
@@ -21,8 +26,10 @@ Picocom::Picocom(int argc, char *argv[])
     opts.imap = M_I_DFL;
     opts.omap = M_O_DFL;
     opts.emap = M_E_DFL;
+}
 
-
+bool Picocom::init(int argc, char *argv[])
+{
     int r;
 
     parse_args(argc, argv);
@@ -31,57 +38,80 @@ Picocom::Picocom(int argc, char *argv[])
 
     r = term_lib_init();
     if ( r < 0 )
+    {
         fatal("term_init failed: %s", term_strerror(term_errno, errno));
+        return false;
+    }
 
     tty_fd = open(opts.port.toLocal8Bit().data(), O_RDWR | O_NONBLOCK | O_NOCTTY);
     if (tty_fd < 0)
+    {
         fatal("cannot open %s: %s", opts.port.toLocal8Bit().data(), strerror(errno));
+        return false;
+    }
 
     if ( opts.noinit ) {
         r = term_add(tty_fd);
     } else {
-        r = term_set(tty_fd,
-                     1,              /* raw mode. */
-                     opts.baud,      /* baud rate. */
-                     opts.parity,    /* parity. */
-                     opts.databits,  /* data bits. */
-                     opts.flow,      /* flow control. */
-                     1,              /* local or modem */
-                     !opts.noreset); /* hup-on-close. */
+//        r = term_set(tty_fd,
+//                     1,              /* raw mode. */
+//                     opts.baud,      /* baud rate. */
+//                     opts.parity,    /* parity. */
+//                     opts.databits,  /* data bits. */
+//                     opts.flow,      /* flow control. */
+//                     1,              /* local or modem */
+//                     !opts.noreset); /* hup-on-close. */
+        r = term_add(tty_fd);
+        tohcom_send_dbus_command(QString("baud %1").arg(opts.baud));
+        tohcom_send_dbus_command(QString("parity %1").arg(opts.parity_str));
+        tohcom_send_dbus_command(QString("bits %1").arg(opts.databits));
+        tohcom_send_dbus_command(QString("stop %1").arg(1)); /* stop bits */
+        tohcom_send_dbus_command(QString("flow %1").arg(opts.flow_str));
     }
     if ( r < 0 )
+    {
         fatal("failed to add device %s: %s",
               opts.port.toLocal8Bit().data(), term_strerror(term_errno, errno));
+        return false;
+    }
     r = term_apply(tty_fd);
     if ( r < 0 )
+    {
         fatal("failed to config device %s: %s",
               opts.port.toLocal8Bit().data(), term_strerror(term_errno, errno));
+        return false;
+    }
 
     r = term_add(STI);
     if ( r < 0 )
+    {
         fatal("failed to add I/O device: %s",
               term_strerror(term_errno, errno));
+        return false;
+    }
     term_set_raw(STI);
     r = term_apply(STI);
     if ( r < 0 )
+    {
         fatal("failed to set I/O device to raw mode: %s",
               term_strerror(term_errno, errno));
+        return false;
+    }
 
     fd_printf(STO, "Terminal ready\r\n");
-/*    loop();
 
-    fd_printf(STO, "\r\n");
-    if ( opts.noreset ) {
-        fd_printf(STO, "Skipping tty reset...\r\n");
-        term_erase(tty_fd);
-    }
-*/
+    return true;
 }
 
 /* Desctructor */
 Picocom::~Picocom()
 {
-
+    fd_printf(STO, "\r\n");
+    if ( opts.noreset ) {
+        fd_printf(STO, "Skipping tty reset...\r\n");
+        term_erase(tty_fd);
+    }
+    fd_printf(STO, "Closing picocom...\r\n");
 }
 
 
@@ -203,11 +233,6 @@ void Picocom::fatal (const char *format, ...)
 	writen_ni(STO, buf, len);
 	s = "\r\n";
 	writen_ni(STO, s, strlen(s));
-
-	/* wait a bit for output to drain */
-	sleep(1);
-
-	exit(EXIT_FAILURE);
 }
 
 /**/
@@ -322,8 +347,10 @@ void Picocom::map_and_write (int fd, int map, char c)
 
 /**********************************************************************/
 
-int Picocom::baud_up (int baud)
+void Picocom::baud_up ()
 {
+    int baud = opts.baud;
+
 	if ( baud < 300 )
 		baud = 300;
 	else if ( baud == 38400 )
@@ -338,11 +365,17 @@ int Picocom::baud_up (int baud)
 		baud = 921600;
 #endif
 
-	return baud;
+    if (baud != opts.baud)
+    {
+        opts.baud = baud;
+        tohcom_send_dbus_command(QString("baud %1").arg(baud));
+    }
 }
 
-int Picocom::baud_down (int baud)
+void Picocom::baud_down ()
 {
+    int baud = opts.baud;
+
 #ifndef HIGH_BAUD
 	if ( baud > 115200 )
 		baud = 115200;
@@ -358,63 +391,89 @@ int Picocom::baud_down (int baud)
 	if ( baud < 300)
 		baud = 300;
 
-	return baud;
+    if (baud != opts.baud)
+    {
+        opts.baud = baud;
+        tohcom_send_dbus_command(QString("baud %1").arg(baud));
+    }
 }
 
-flowcntrl_e Picocom::flow_next (flowcntrl_e flow, char **flow_str)
+void Picocom::flow_next()
 {
-	switch(flow) {
+    flowcntrl_e flow = opts.flow;
+    QString flow_str;
+
+    switch(opts.flow) {
 	case FC_NONE:
-		flow = FC_RTSCTS;
-        *flow_str = "RTS/CTS";
+        flow = FC_RTSCTS;
+        flow_str = "RTS/CTS";
 		break;
 	case FC_RTSCTS:
-		flow = FC_XONXOFF;
-        *flow_str = "xon/xoff";
+        flow = FC_XONXOFF;
+        flow_str = "xon/xoff";
 		break;
 	case FC_XONXOFF:
-		flow = FC_NONE;
-        *flow_str = "none";
+        flow = FC_NONE;
+        flow_str = "none";
 		break;
 	default:
-		flow = FC_NONE;
-        *flow_str = "none";
+        flow = FC_NONE;
+        flow_str = "none";
 		break;
 	}
 
-	return flow;
+    if (flow != opts.flow)
+    {
+        opts.flow = flow;
+        opts.flow_str = flow_str;
+        tohcom_send_dbus_command(QString("flow %1").arg(flow_str));
+    }
 }
 
-parity_e Picocom::parity_next (parity_e parity, char **parity_str)
+void Picocom::parity_next ()
 {
-	switch(parity) {
+    parity_e parity = opts.parity;
+    QString parity_str;
+
+    switch(parity) {
 	case P_NONE:
-		parity = P_EVEN;
-        *parity_str = "even";
+        parity = P_EVEN;
+        parity_str = "even";
 		break;
 	case P_EVEN:
-		parity = P_ODD;
-        *parity_str = "odd";
+        parity = P_ODD;
+        parity_str = "odd";
 		break;
 	case P_ODD:
-		parity = P_NONE;
-        *parity_str = "none";
+        parity = P_NONE;
+        parity_str = "none";
 		break;
 	default:
-		parity = P_NONE;
-        *parity_str = "none";
+        parity = P_NONE;
+        parity_str = "none";
 		break;
 	}
 
-	return parity;
+    if (parity != opts.parity)
+    {
+        opts.parity = parity;
+        opts.parity_str = parity_str;
+        tohcom_send_dbus_command(QString("parity %1").arg(parity_str));
+    }
 }
 
-int Picocom::bits_next (int bits)
+void Picocom::bits_next ()
 {
-	bits++;
+    int bits = opts.databits;
+
+    bits++;
 	if (bits > 8) bits = 5;
 
-	return bits;
+    if (bits != opts.databits)
+    {
+        opts.databits = bits;
+        tohcom_send_dbus_command(QString("bits ").arg(bits));
+    }
 }
 
 /**********************************************************************/
@@ -530,7 +589,7 @@ struct tty_q {
 
 /**********************************************************************/
 
-void Picocom::loop(void)
+void Picocom::loop()
 {
 	enum {
 		ST_COMMAND,
@@ -538,11 +597,6 @@ void Picocom::loop(void)
 	} state;
 	int dtr_up;
 	fd_set rdset, wrset;
-    int newbaud, newbits;
-    parity_e newparity;
-    flowcntrl_e newflow;
-    char *newflow_str;
-    char *newparity_str;
 	char fname[128];
 	int r, n;
 	unsigned char c;
@@ -598,15 +652,14 @@ void Picocom::loop(void)
 				state = ST_TRANSPARENT;
 				switch (c) {
 				case KEY_EXIT:
+                    emit wantsToQuit();
 					return;
 				case KEY_QUIT:
 					term_set_hupcl(tty_fd, 0);
 					term_flush(tty_fd);
 					term_apply(tty_fd);
 					term_erase(tty_fd);
-#ifdef TOHCOM
-                    tohcom_send_dbus_command("quit");
-#endif
+                    emit wantsToQuit();
 					return;
 				case KEY_STATUS:
 					fd_printf(STO, "\r\n");
@@ -631,57 +684,24 @@ void Picocom::loop(void)
 							  dtr_up ? "up" : "down");
 					break;
 				case KEY_BAUD_UP:
-					newbaud = baud_up(opts.baud);
-#ifndef TOHCOM
-					term_set_baudrate(tty_fd, newbaud);
-					tty_q.len = 0; term_flush(tty_fd);
-					if ( term_apply(tty_fd) >= 0 ) opts.baud = newbaud;
-#else
-                    tohcom_send_dbus_command(QString("baud %1").arg(newbaud));
-                    opts.baud = newbaud;
-#endif
+                    baud_up();
 					fd_printf(STO, "\r\n*** baud: %d ***\r\n", opts.baud);
 					break;
 				case KEY_BAUD_DN:
-					newbaud = baud_down(opts.baud);
-#ifndef TOHCOM
-					term_set_baudrate(tty_fd, newbaud);
-					tty_q.len = 0; term_flush(tty_fd);
-					if ( term_apply(tty_fd) >= 0 ) opts.baud = newbaud;
-#else
-                    tohcom_send_dbus_command(QString("baud %1").arg(newbaud));
-                    opts.baud = newbaud;
-#endif
+                    baud_down();
                     fd_printf(STO, "\r\n*** baud: %d ***\r\n", opts.baud);
 					break;
 				case KEY_FLOW:
-					newflow = flow_next(opts.flow, &newflow_str);
-					term_set_flowcntrl(tty_fd, newflow);
-					tty_q.len = 0; term_flush(tty_fd);
-					if ( term_apply(tty_fd) >= 0 ) {
-						opts.flow = newflow;
-						opts.flow_str = newflow_str;
-					}
+                    flow_next();
                     fd_printf(STO, "\r\n*** flow: %s ***\r\n", opts.flow_str.toLocal8Bit().data());
 					break;
 				case KEY_PARITY:
-					newparity = parity_next(opts.parity, &newparity_str);
-					term_set_parity(tty_fd, newparity);
-					tty_q.len = 0; term_flush(tty_fd);
-					if ( term_apply(tty_fd) >= 0 ) {
-						opts.parity = newparity;
-						opts.parity_str = newparity_str;
-					}
-					fd_printf(STO, "\r\n*** parity: %s ***\r\n", 
-                              opts.parity_str.toLocal8Bit().data());
+                    parity_next();
+                    fd_printf(STO, "\r\n*** parity: %s ***\r\n", opts.parity_str.toLocal8Bit().data());
 					break;
 				case KEY_BITS:
-					newbits = bits_next(opts.databits);
-					term_set_databits(tty_fd, newbits);
-					tty_q.len = 0; term_flush(tty_fd);
-					if ( term_apply(tty_fd) >= 0 ) opts.databits = newbits;
-					fd_printf(STO, "\r\n*** databits: %d ***\r\n", 
-							  opts.databits);
+                    bits_next();
+                    fd_printf(STO, "\r\n*** databits: %d ***\r\n", opts.databits);
 					break;
 				case KEY_LECHO:
 					opts.lecho = ! opts.lecho;
@@ -1030,21 +1050,27 @@ void Picocom::parse_args(int argc, char *argv[])
 
 int main(int argc, char *argv[])
 {
-    //QCoreApplication app(argc, argv);
+    QCoreApplication app(argc, argv);
 
-    Picocom *picocom = new Picocom(argc, argv);
+    Picocom *picocom = new Picocom();
+    QThread *thread = new QThread();
 
-    picocom->loop();
+    int ret = EXIT_FAILURE;
 
-    //return app.exec();
+    if (picocom->init(argc, argv))
+    {
+        picocom->moveToThread(thread);
+
+        QObject::connect(thread, SIGNAL(started()), picocom, SLOT(loop()));
+        QObject::connect(picocom, SIGNAL(wantsToQuit()), picocom, SLOT(deleteLater()), Qt::DirectConnection);
+        QObject::connect(picocom, SIGNAL(destroyed()), &app, SLOT(quit()), Qt::DirectConnection);
+
+        thread->start();
+
+        ret = app.exec();
+    }
+
+    return ret;
 }
 
 /**********************************************************************/
-
-/*
- * Local Variables:
- * mode:c
- * tab-width: 4
- * c-basic-offset: 4
- * End:
- */
