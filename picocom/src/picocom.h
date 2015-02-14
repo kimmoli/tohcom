@@ -100,6 +100,7 @@ public:
 
 signals:
     void wantsToQuit();
+    void killMeNow();
 
 public slots:
     void loop();

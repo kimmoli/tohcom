@@ -342,7 +342,10 @@ void Picocom::map_and_write (int fd, int map, char c)
 	n = do_map(b, map, c);
 	if ( n )
 		if ( writen_ni(fd, b, n) < n )
+        {
 			fatal("write to stdout failed: %s", strerror(errno));		
+            emit wantsToQuit();
+        }
 }
 
 /**********************************************************************/
@@ -472,7 +475,7 @@ void Picocom::bits_next ()
     if (bits != opts.databits)
     {
         opts.databits = bits;
-        tohcom_send_dbus_command(QString("bits ").arg(bits));
+        tohcom_send_dbus_command(QString("bits %1").arg(bits));
     }
 }
 
@@ -614,7 +617,10 @@ void Picocom::loop()
 		if ( tty_q.len ) FD_SET(tty_fd, &wrset);
 
 		if (select(tty_fd + 1, &rdset, &wrset, NULL, NULL) < 0)
+        {
 			fatal("select failed: %d : %s", errno, strerror(errno));
+            emit wantsToQuit();
+        }
 
 		if ( FD_ISSET(STI, &rdset) ) {
 
@@ -625,10 +631,14 @@ void Picocom::loop()
 			} while (n < 0 && errno == EINTR);
 			if (n == 0) {
 				fatal("stdin closed");
+                emit wantsToQuit();
 			} else if (n < 0) {
 				/* is this really necessary? better safe than sory! */
 				if ( errno != EAGAIN && errno != EWOULDBLOCK ) 
+                {
 					fatal("read from stdin failed: %s", strerror(errno));
+                    emit wantsToQuit();
+                }
 				else
 					goto skip_proc_STI;
 			}
@@ -714,7 +724,10 @@ void Picocom::loop()
 					fd_printf(STO, "\r\n");
 					if ( r < -1 && errno == EINTR ) break;
 					if ( r <= -1 )
+                    {
 						fatal("cannot read filename: %s", strerror(errno));
+                        emit wantsToQuit();
+                    }
                     run_cmd(tty_fd, opts.send_cmd.toLocal8Bit().data(), fname, NULL);
 					break;
 				case KEY_RECEIVE:
@@ -723,7 +736,10 @@ void Picocom::loop()
 					fd_printf(STO, "\r\n");
 					if ( r < -1 && errno == EINTR ) break;
 					if ( r <= -1 )
+                    {
 						fatal("cannot read filename: %s", strerror(errno));
+                        emit wantsToQuit();
+                    }
 					if ( fname[0] )
                         run_cmd(tty_fd, opts.receive_cmd.toLocal8Bit().data(), fname, NULL);
 					else
@@ -764,15 +780,26 @@ void Picocom::loop()
 
 			/* read from port */
 
-			do {
+            do
+            {
 				n = read(tty_fd, &c, 1);
 			} while (n < 0 && errno == EINTR);
-			if (n == 0) {
+
+            if (n == 0)
+            {
 				fatal("term closed");
-			} else if ( n < 0 ) {
+                emit killMeNow();
+            }
+            else if ( n < 0 )
+            {
 				if ( errno != EAGAIN && errno != EWOULDBLOCK )
+                {
 					fatal("read from term failed: %s", strerror(errno));
-			} else {
+                    emit wantsToQuit();
+                }
+            }
+            else
+            {
 				map_and_write(STO, opts.imap, c);
 			}
 		}
@@ -785,7 +812,10 @@ void Picocom::loop()
 				n = write(tty_fd, tty_q.buff, tty_q.len);
 			} while ( n < 0 && errno == EINTR );
 			if ( n <= 0 )
+            {
 				fatal("write to term failed: %s", strerror(errno));
+                emit wantsToQuit();
+            }
 			memcpy(tty_q.buff, tty_q.buff + n, tty_q.len - n);
 			tty_q.len -= n;
 		}
@@ -1063,6 +1093,7 @@ int main(int argc, char *argv[])
 
         QObject::connect(thread, SIGNAL(started()), picocom, SLOT(loop()));
         QObject::connect(picocom, SIGNAL(wantsToQuit()), picocom, SLOT(deleteLater()), Qt::DirectConnection);
+        QObject::connect(picocom, SIGNAL(killMeNow()), &app, SLOT(quit()), Qt::DirectConnection);
         QObject::connect(picocom, SIGNAL(destroyed()), &app, SLOT(quit()), Qt::DirectConnection);
 
         thread->start();
