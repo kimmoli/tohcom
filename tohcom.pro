@@ -3,5 +3,5 @@
 #
 
 TEMPLATE = subdirs
-SUBDIRS = pseudo picocom
+SUBDIRS = daemon picocom
 OTHER_FILES = rpm/tohcom.spec

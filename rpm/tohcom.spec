@@ -19,6 +19,7 @@ Source0:    %{name}-%{version}.tar.bz2
 
 BuildRequires:  pkgconfig(Qt5Core)
 BuildRequires:  pkgconfig(Qt5DBus)
+BuildRequires:  desktop-file-utils
 
 %description
 Serial Console for TOHUART, TheOtherHalf UART
@@ -37,7 +38,15 @@ rm -rf %{buildroot}
 
 %qmake5_install
 
-%files
-%defattr(-,root,root,-)
-%{_bindir}/
+desktop-file-install --delete-original       \
+  --dir %{buildroot}%{_datadir}/applications             \
+   %{buildroot}%{_datadir}/applications/*.desktop
 
+%files
+%defattr(644,root,root,755)
+%attr(6755,root,root) %{_bindir}/tohcom
+%attr(755,root,root) %{_bindir}/picocom
+%{_datadir}/applications
+%{_datadir}/icons/hicolor/86x86/apps/
+%{_datadir}/dbus-1/system-services/
+%{_sysconfdir}/dbus-1/system.d/

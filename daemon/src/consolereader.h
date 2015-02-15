@@ -8,7 +8,8 @@ class ConsoleReader : public QObject
 {
     Q_OBJECT
 public:
-    explicit ConsoleReader(QObject *parent = 0);
+    explicit ConsoleReader(bool readConsole = true, QObject *parent = 0);
+    bool m_readConsole;
 
 signals:
     void uartDebugCommand(QString cmd);

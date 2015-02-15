@@ -4,6 +4,9 @@
         <method name="command">
             <arg name="value" type="s" direction="in" />
         </method>
+        <method name="getPseudoDevice">
+            <arg name="value" type="s" direction="out" />
+        </method>
         <method name="getVersion">
             <arg name="value" type="s" direction="out" />
         </method>

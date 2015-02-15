@@ -1,0 +1,5 @@
+[Desktop Entry]
+Type=Application
+Name=Tohcom
+Icon=tohcom
+Exec=fingerterm -e "/usr/bin/picocom --dbus"

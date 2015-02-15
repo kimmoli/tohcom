@@ -19,6 +19,7 @@ public:
 signals:
     void receive(QByteArray data);
     void changeBaudrate(unsigned long bps);
+    void pseudoDeviceCreated(QString device);
 
 public slots:
     void create();

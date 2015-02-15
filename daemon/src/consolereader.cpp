@@ -7,11 +7,13 @@
 
 #include <unistd.h>
 
-ConsoleReader::ConsoleReader(QObject *parent) :
+ConsoleReader::ConsoleReader(bool readConsole, QObject *parent) :
+    m_readConsole(readConsole),
     QObject(parent),
     notifier(STDIN_FILENO, QSocketNotifier::Read)
 {
-    connect(&notifier, SIGNAL(activated(int)), this, SLOT(text()));
+    if (m_readConsole)
+        connect(&notifier, SIGNAL(activated(int)), this, SLOT(text()));
 }
 
 void ConsoleReader::text()
@@ -24,11 +26,12 @@ void ConsoleReader::processCommandLine(QString line)
 {
     if (line.isEmpty())
     {
-        prompt(false);
+        if (m_readConsole)
+            prompt(false);
         return;
     }
 
-    if (line.startsWith("help", Qt::CaseInsensitive))
+    if (line.startsWith("help", Qt::CaseInsensitive) && m_readConsole)
     {
         printf("help        show this help\n");
         printf("quit        quit tohcom\n");
@@ -44,8 +47,11 @@ void ConsoleReader::processCommandLine(QString line)
 
 void ConsoleReader::prompt(bool unknown)
 {
-    if (unknown)
-        printf("Unknown command\n");
-    printf("> ");
-    fflush(stdout);
+    if (m_readConsole)
+    {
+        if (unknown)
+            printf("Unknown command\n");
+        printf("> ");
+        fflush(stdout);
+    }
 }

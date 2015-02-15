@@ -1,0 +1,4 @@
+[D-BUS Service]
+Name=com.kimmoli.tohcom
+Exec=/usr/bin/tohcom -m -t
+User=root

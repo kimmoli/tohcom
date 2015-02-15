@@ -9,17 +9,18 @@ TohcomDBus::TohcomDBus(QObject *parent) :
     QObject(parent)
 {
     m_dbusRegistered = false;
+    m_pseudoDevice = QString();
 }
 
 TohcomDBus::~TohcomDBus()
 {
     if (m_dbusRegistered)
     {
-        QDBusConnection connection = QDBusConnection::sessionBus();
+        QDBusConnection connection = QDBusConnection::systemBus();
         connection.unregisterObject(PATH);
         connection.unregisterService(SERVICE);
 
-        printf("TohcomDBus: unregistered from dbus sessionBus\n");
+        printf("TohcomDBus: unregistered from dbus systemBus\n");
     }
 }
 
@@ -28,7 +29,7 @@ void TohcomDBus::registerDBus()
     if (!m_dbusRegistered)
     {
         // DBus
-        QDBusConnection connection = QDBusConnection::sessionBus();
+        QDBusConnection connection = QDBusConnection::systemBus();
         if (!connection.registerService(SERVICE))
         {
             QCoreApplication::quit();
@@ -42,7 +43,7 @@ void TohcomDBus::registerDBus()
         }
         m_dbusRegistered = true;
 
-        printf("TohcomDBus: succesfully registered to dbus sessionBus \"%s\"\n", SERVICE);
+        printf("TohcomDBus: succesfully registered to dbus systemBus \"%s\"\n", SERVICE);
     }
 }
 
@@ -55,4 +56,14 @@ void TohcomDBus::command(const QString &line)
 QString TohcomDBus::getVersion()
 {
     return QString(APPVERSION);
+}
+
+QString TohcomDBus::getPseudoDevice()
+{
+    return m_pseudoDevice;
+}
+
+void TohcomDBus::setPseudoDevice(QString device)
+{
+    m_pseudoDevice = device;
 }

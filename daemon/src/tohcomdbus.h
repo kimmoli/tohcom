@@ -23,10 +23,12 @@ signals:
 public slots:
     void command(const QString &line);
     QString getVersion();
+    QString getPseudoDevice();
+    void setPseudoDevice(QString device);
 
 private:
     bool m_dbusRegistered;
-
+    QString m_pseudoDevice;
 };
 
 #endif // TOHCOMDBUS_H

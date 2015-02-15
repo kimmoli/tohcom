@@ -65,6 +65,8 @@ void pseudoport::create()
     snRead->connect(snRead, SIGNAL(activated(int)), this, SLOT(handleRead()));
 
     printf("Created pseudo-terminal %s (%s)\n", slave, master);
+
+    emit pseudoDeviceCreated(QString(slave));
 }
 
 void pseudoport::handleRead()

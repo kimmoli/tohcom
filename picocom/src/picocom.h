@@ -87,6 +87,7 @@ struct Opts
     int imap;
     int omap;
     int emap;
+    int dbus;
 };
 
 class Picocom : public QObject
@@ -96,7 +97,11 @@ public:
     Picocom();
     ~Picocom();
 
-    bool init(int argc, char *argv[]);
+    bool init();
+    void parse_args(int argc, char *argv[]);
+    QString readFromDaemon(QString method);
+
+    Opts opts;
 
 signals:
     void wantsToQuit();
@@ -106,8 +111,6 @@ public slots:
     void loop();
 
 private:
-    Opts opts;
-
     int tty_fd;
 
     int parse_map (char *s);
@@ -130,7 +133,6 @@ private:
     //void deadly_handler(int signum);
     void establish_signal_handlers (void);
     void show_usage(char *name);
-    void parse_args(int argc, char *argv[]);
 
 
 };

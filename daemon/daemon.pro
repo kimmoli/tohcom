@@ -12,13 +12,17 @@ QT += dbus
 
 system(qdbusxml2cpp config/com.kimmoli.tohcom.xml -i src/tohcomdbus.h -a src/adaptor)
 
-target.path = /usr/bin/
-
 DEFINES += "APPVERSION=\\\"$${SPECVERSION}\\\""
 
-message($${DEFINES})
+target.path = /usr/bin/
 
-INSTALLS += target
+dbusconf.path = /etc/dbus-1/system.d/
+dbusconf.files = config/tohcom.conf
+
+dbusservice.path = /usr/share/dbus-1/system-services/
+dbusservice.files = config/com.kimmoli.tohcom.service
+
+INSTALLS += target dbusconf dbusservice
 
 SOURCES += src/tohcom.cpp \
     src/driverBase.cpp \
@@ -41,4 +45,6 @@ HEADERS += src/driverBase.h \
     src/adaptor.h
 
 OTHER_FILES += \
-    config/com.kimmoli.tohcom.xml
+    config/com.kimmoli.tohcom.xml \
+    config/com.kimmoli.tohcom.service \
+    config/tohcom.conf

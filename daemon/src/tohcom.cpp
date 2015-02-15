@@ -23,16 +23,25 @@ int main(int argc, char *argv[])
 {
 
     bool rootUser = false;
+    bool startedFromDbus = false;
 
     QStringList environment = QProcessEnvironment::systemEnvironment().toStringList();
+
     for (int n=0; n<environment.length(); n++)
+    {
         if (environment.at(n) == "USER=root")
         {
             rootUser = true;
             break;
         }
+        if (environment.at(n) == "DBUS_STARTER_BUS_TYPE=system")
+        {
+            startedFromDbus = true;
+            break;
+        }
+    }
 
-    if (!rootUser)
+    if (!rootUser && !startedFromDbus)
     {
         printf("Error: You need to be root to use this utility!\n");
         return EXIT_FAILURE;
@@ -53,7 +62,7 @@ int main(int argc, char *argv[])
     setlinebuf(stdout);
     setlinebuf(stderr);
 
-    if (argc < 2)
+    if ((argc < 2) && !startedFromDbus)
     {
         printf("tohcom version " APPVERSION " (C) kimmoli 2015\n\n");
         printf("Usage:\n");
@@ -147,7 +156,7 @@ int main(int argc, char *argv[])
     QThread* t_coms = new QThread();
     coms->moveToThread(t_coms);
 
-    ConsoleReader* console = new ConsoleReader();
+    ConsoleReader* console = new ConsoleReader(!startedFromDbus);
 
     TohcomDBus adaptor;
     new TohcomAdaptor(&adaptor);
@@ -175,6 +184,8 @@ int main(int argc, char *argv[])
 
         app->connect(t_coms, SIGNAL(started()), coms, SLOT(initComs()));
         app->connect(t_port, SIGNAL(started()), port, SLOT(create()));
+
+        app->connect(port, SIGNAL(pseudoDeviceCreated(QString)), &adaptor, SLOT(setPseudoDevice(QString)));
 
         /* In case of coms error, just quit threads */
         app->connect(coms, SIGNAL(commsErrorFatal()), coms, SLOT(deleteLater()), Qt::DirectConnection);

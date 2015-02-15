@@ -26,13 +26,30 @@ Picocom::Picocom()
     opts.imap = M_I_DFL;
     opts.omap = M_O_DFL;
     opts.emap = M_E_DFL;
+    opts.dbus = 0;
 }
 
-bool Picocom::init(int argc, char *argv[])
+bool Picocom::init()
 {
-    int r;
+    printf("picocom v%s\n", VERSION_STR);
+    printf("\n");
+    printf("port is        : %s\n", opts.port.toLocal8Bit().data());
+    printf("flowcontrol    : %s\n", opts.flow_str.toLocal8Bit().data());
+    printf("baudrate is    : %d\n", opts.baud);
+    printf("parity is      : %s\n", opts.parity_str.toLocal8Bit().data());
+    printf("databits are   : %d\n", opts.databits);
+    printf("escape is      : C-%c\n", 'a' + opts.escape - 1);
+    printf("local echo is  : %s\n", opts.lecho ? "yes" : "no");
+    printf("noinit is      : %s\n", opts.noinit ? "yes" : "no");
+    printf("noreset is     : %s\n", opts.noreset ? "yes" : "no");
+    printf("send_cmd is    : %s\n", opts.send_cmd.toLocal8Bit().data());
+    printf("receive_cmd is : %s\n", opts.receive_cmd.toLocal8Bit().data());
+    printf("imap is        : "); print_map(opts.imap);
+    printf("omap is        : "); print_map(opts.omap);
+    printf("emap is        : "); print_map(opts.emap);
+    printf("\n");
 
-    parse_args(argc, argv);
+    int r;
 
     establish_signal_handlers();
 
@@ -111,7 +128,13 @@ Picocom::~Picocom()
         fd_printf(STO, "Skipping tty reset...\r\n");
         term_erase(tty_fd);
     }
+
     fd_printf(STO, "Closing picocom...\r\n");
+
+    QThread::msleep(500);
+
+    if (opts.dbus)
+        tohcom_send_dbus_command("quit");
 }
 
 
@@ -169,11 +192,27 @@ void Picocom::print_map (int flags)
 
 void Picocom::tohcom_send_dbus_command(QString line)
 {
-    QDBusInterface tohcom("com.kimmoli.tohcom", "/", "com.kimmoli.tohcom", QDBusConnection::sessionBus());
+    QDBusInterface tohcom("com.kimmoli.tohcom", "/", "com.kimmoli.tohcom", QDBusConnection::systemBus());
     tohcom.setTimeout(2000);
     QList<QVariant> args;
     args.append(QString(line));
     tohcom.callWithArgumentList(QDBus::AutoDetect, "command", args);
+}
+
+QString Picocom::readFromDaemon(QString method)
+{
+    QDBusInterface getCall("com.kimmoli.tohcom", "/", "com.kimmoli.tohcom", QDBusConnection::systemBus());
+    getCall.setTimeout(2000);
+
+    QDBusMessage getCallReply = getCall.call(QDBus::AutoDetect, method);
+
+    if (getCallReply.type() == QDBusMessage::ErrorMessage)
+    {
+        fatal("Error in %s: %s\n", qPrintable(method), qPrintable(getCallReply.errorMessage()));
+        return QString();
+    }
+
+    return getCallReply.arguments().at(0).toString();
 }
 
 
@@ -882,6 +921,7 @@ void Picocom::show_usage(char *name)
 	printf("  --imap <map> (input mappings)\n");
 	printf("  --omap <map> (output mappings)\n");
 	printf("  --emap <map> (local-echo mappings)\n");
+    printf("  --dbus (start tohcom over dbus)\n");
 	printf("  --<h>elp\n");
 	printf("<map> is a comma-separated list of one or more of:\n");
 	printf("  crlf : map CR --> LF\n");
@@ -916,6 +956,7 @@ void Picocom::parse_args(int argc, char *argv[])
 		{"parity", required_argument, 0, 'p'},
 		{"databits", required_argument, 0, 'd'},
 		{"help", no_argument, 0, 'h'},
+        {"dbus", no_argument, 0, 'D'},
 		{0, 0, 0, 0}
 	};
 
@@ -1037,6 +1078,9 @@ void Picocom::parse_args(int argc, char *argv[])
 				break;
 			}
 			break;
+        case 'D':
+            opts.dbus = 1;
+            break;
 		case 'h':
 			show_usage(argv[0]);
 			exit(EXIT_SUCCESS);
@@ -1048,31 +1092,17 @@ void Picocom::parse_args(int argc, char *argv[])
 		}
 	} /* while */
 
-	if ( (argc - optind) < 1) {
-		fprintf(stderr, "No port given\n");
-		exit(EXIT_FAILURE);
-	}
-    opts.port = QString(argv[optind]);
-    //strncpy(opts.port, argv[optind], sizeof(opts.port) - 1);
-    //opts.port[sizeof(opts.port) - 1] = '\0';
+    /* we get port from dbus if so said */
+    if (!opts.dbus)
+    {
+        if ( (argc - optind) < 1)
+        {
+            fprintf(stderr, "No port given\n");
+            exit(EXIT_FAILURE);
+        }
+        opts.port = QString(argv[optind]);
+    }
 
-	printf("picocom v%s\n", VERSION_STR);
-	printf("\n");
-    printf("port is        : %s\n", opts.port.toLocal8Bit().data());
-    printf("flowcontrol    : %s\n", opts.flow_str.toLocal8Bit().data());
-	printf("baudrate is    : %d\n", opts.baud);
-    printf("parity is      : %s\n", opts.parity_str.toLocal8Bit().data());
-	printf("databits are   : %d\n", opts.databits);
-	printf("escape is      : C-%c\n", 'a' + opts.escape - 1);
-	printf("local echo is  : %s\n", opts.lecho ? "yes" : "no");
-	printf("noinit is      : %s\n", opts.noinit ? "yes" : "no");
-	printf("noreset is     : %s\n", opts.noreset ? "yes" : "no");
-    printf("send_cmd is    : %s\n", opts.send_cmd.toLocal8Bit().data());
-    printf("receive_cmd is : %s\n", opts.receive_cmd.toLocal8Bit().data());
-	printf("imap is        : "); print_map(opts.imap);
-	printf("omap is        : "); print_map(opts.omap);
-	printf("emap is        : "); print_map(opts.emap);
-	printf("\n");
 }
 
 /**********************************************************************/
@@ -1085,21 +1115,41 @@ int main(int argc, char *argv[])
     Picocom *picocom = new Picocom();
     QThread *thread = new QThread();
 
-    int ret = EXIT_FAILURE;
+    int ret = EXIT_SUCCESS;
 
-    if (picocom->init(argc, argv))
+    picocom->parse_args(argc, argv);
+
+    if (picocom->opts.dbus)
     {
-        picocom->moveToThread(thread);
+        QString daemonVersion = picocom->readFromDaemon("getVersion");
 
-        QObject::connect(thread, SIGNAL(started()), picocom, SLOT(loop()));
-        QObject::connect(picocom, SIGNAL(wantsToQuit()), picocom, SLOT(deleteLater()), Qt::DirectConnection);
-        QObject::connect(picocom, SIGNAL(killMeNow()), &app, SLOT(quit()), Qt::DirectConnection);
-        QObject::connect(picocom, SIGNAL(destroyed()), &app, SLOT(quit()), Qt::DirectConnection);
-
-        thread->start();
-
-        ret = app.exec();
+        if (daemonVersion != QString())
+        {
+            printf("Tohcom Daemon version: %s\n", qPrintable(daemonVersion));
+            QThread::msleep(300);
+            picocom->opts.port = picocom->readFromDaemon("getPseudoDevice");
+        }
+        else
+        {
+            printf("Daemon not running.\n");
+            ret = EXIT_FAILURE;
+        }
     }
+
+    if (ret == EXIT_SUCCESS)
+        if (picocom->init())
+        {
+            picocom->moveToThread(thread);
+
+            QObject::connect(thread, SIGNAL(started()), picocom, SLOT(loop()));
+            QObject::connect(picocom, SIGNAL(wantsToQuit()), picocom, SLOT(deleteLater()), Qt::DirectConnection);
+            QObject::connect(picocom, SIGNAL(killMeNow()), &app, SLOT(quit()), Qt::DirectConnection);
+            QObject::connect(picocom, SIGNAL(destroyed()), &app, SLOT(quit()), Qt::DirectConnection);
+
+            thread->start();
+
+            ret = app.exec();
+        }
 
     return ret;
 }

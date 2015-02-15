@@ -11,15 +11,17 @@ QT -= gui
 QT += dbus
 
 DEFINES += VERSION_STR=\\\"1.7.2\\\"
-# DEFINES += UUCP_LOCK_DIR=\\\"/var/lock\\\"
 DEFINES += HIGH_BAUD
-DEFINES += TOHCOM
-
-message($${DEFINES})
 
 target.path = /usr/bin/
 
-INSTALLS += target
+desktop.path = /usr/share/applications
+desktop.files = config/tohcom.desktop
+
+icon.path = /usr/share/icons/hicolor/86x86/apps/
+icon.files = config/tohcom.png
+
+INSTALLS += target desktop icon
 
 SOURCES += \
     src/term.c \
@@ -28,3 +30,6 @@ SOURCES += \
 HEADERS += src/term.h \
     src/picocom.h
 
+OTHER_FILES += \
+    config/tohcom.desktop \
+    config/tohcom.png \
