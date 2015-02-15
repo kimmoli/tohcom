@@ -666,7 +666,7 @@ void Picocom::loop()
 
 	tty_q.len = 0;
 	state = ST_TRANSPARENT;
-	dtr_up = 0;
+    dtr_up = 1;
 
 	for (;;) {
 		FD_ZERO(&rdset);
@@ -739,18 +739,16 @@ void Picocom::loop()
 					fd_printf(STO, "*** dtr: %s\r\n", dtr_up ? "up" : "down");
 					break;
 				case KEY_PULSE:
-					fd_printf(STO, "\r\n*** pulse DTR ***\r\n");
-					if ( term_pulse_dtr(tty_fd) < 0 )
-						fd_printf(STO, "*** FAILED\r\n");
+                    fd_printf(STO, "\r\n*** pulse DTR %s ***\r\n", dtr_up ? "down" : "up");
+                    tohcom_send_dbus_command("dtr pulse");
 					break;
 				case KEY_TOGGLE:
 					if ( dtr_up )
-						r = term_lower_dtr(tty_fd);
+                        tohcom_send_dbus_command("dtr down");
 					else
-						r = term_raise_dtr(tty_fd);
-					if ( r >= 0 ) dtr_up = ! dtr_up;
-					fd_printf(STO, "\r\n*** DTR: %s ***\r\n", 
-							  dtr_up ? "up" : "down");
+                        tohcom_send_dbus_command("dtr up");
+                    dtr_up = ! dtr_up;
+                    fd_printf(STO, "\r\n*** DTR: %s ***\r\n", dtr_up ? "up" : "down");
 					break;
 				case KEY_BAUD_UP:
                     baud_up();
