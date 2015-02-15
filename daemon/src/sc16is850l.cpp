@@ -10,6 +10,7 @@ SC16IS850L::SC16IS850L(unsigned char address) : m_address(address)
     parity = PARITY_NONE;
     stop = STOP_1;
     wordlen = WORDLEN_8;
+    dtr = true;
 
     initOk = false;
 }
@@ -150,6 +151,24 @@ void SC16IS850L::setLineparams(int parity, int stop, int wordlen)
     this->stop = stop;
     this->parity = parity;
     this->wordlen = wordlen;
+}
+
+void SC16IS850L::setDtr(bool state)
+{
+    dtr = state;
+
+    QByteArray mcrRead = writeThenRead(m_address, GR_MCR, 1);
+    if (mcrRead.isEmpty())
+        return;
+
+    char mcr = mcrRead.at(0);
+
+    if (dtr)
+        mcr &= ~MCR_DTRL;
+    else
+        mcr |= MCR_DTRL;
+
+    writeBytes(m_address, QByteArray().append(GR_MCR).append(mcr));
 }
 
 /* Transmit bytes */

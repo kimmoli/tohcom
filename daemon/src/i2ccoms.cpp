@@ -78,6 +78,7 @@ void i2ccoms::debugCommand(QString cmd)
         printf("bits        set word length: 5, 6, 7 ,8\n");
         printf("stop        set stop bits: 1, 2\n");
         printf("flow        set flow-control: none, RTS/CTS, xon/xoff\n");
+        printf("dtr         control dtr pin: pulse, up, down\n");
     }
     else if (cmd.startsWith("dump", Qt::CaseInsensitive))
     {
@@ -203,6 +204,33 @@ void i2ccoms::debugCommand(QString cmd)
     else if (cmd.startsWith("flow", Qt::CaseInsensitive))
     {
         printf("flow-control not implemented\n");
+    }
+    else if (cmd.startsWith("dtr", Qt::CaseInsensitive))
+    {
+        if (uart)
+        {
+            QStringList p = cmd.split(" ");
+
+            if (p.count() == 2)
+            {
+                if (p.at(1).startsWith("p"))
+                {
+                    uart->setDtr(!uart->dtr);
+                    QThread::msleep(1000);
+                    uart->setDtr(!uart->dtr);
+                }
+                else if (p.at(1).startsWith("u"))
+                    uart->setDtr(true);
+                else if (p.at(1).startsWith("d"))
+                    uart->setDtr(false);
+                else
+                    printf("illegal value\n");
+            }
+            else
+                printf("dtr is %s\n", uart->dtr ? "up" : "down");
+        }
+        else
+            printf("uart not initialized\n");
     }
     else if (cmd.startsWith("send", Qt::CaseInsensitive))
     {

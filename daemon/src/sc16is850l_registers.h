@@ -69,5 +69,14 @@
 #define LSR_OVERRUN     (char)(0x02)
 #define LSR_RXREADY     (char)(0x01)
 
+/* MCR Register bits */
+#define MCR_CLKSEL      (char)(0x80)
+#define MCR_IREN        (char)(0x40)
+#define MCR_LOOPBACK    (char)(0x10)
+#define MCR_OP2         (char)(0x08)
+#define MCR_OP1         (char)(0x04)
+#define MCR_RTSL        (char)(0x02)
+#define MCR_DTRL        (char)(0x01)
+
 
 #endif // SC16IS850L_REGISTERS_H
