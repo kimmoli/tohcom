@@ -620,6 +620,26 @@ int Picocom::run_cmd(int fd, ...)
 	}
 }
 
+
+void Picocom::show_help()
+{
+    fd_printf(STO, "C-%c C-%c   exit picocom\r\n", 'a' + opts.escape -1, 'a' + KEY_EXIT-1);
+    fd_printf(STO, "C-%c C-%c   exit picocom without reseting port\r\n", 'a' + opts.escape -1, 'a' + KEY_QUIT-1);
+    fd_printf(STO, "C-%c C-%c   pulse DTR\r\n", 'a' + opts.escape -1, 'a' + KEY_PULSE  -1);
+    fd_printf(STO, "C-%c C-%c   toggle DTR\r\n", 'a' + opts.escape -1, 'a' + KEY_TOGGLE -1);
+    fd_printf(STO, "C-%c C-%c   increase baudrate (up)\r\n", 'a' + opts.escape -1, 'a' + KEY_BAUD_UP-1);
+    fd_printf(STO, "C-%c C-%c   decrase baudrate (down)\r\n", 'a' + opts.escape -1, 'a' + KEY_BAUD_DN-1);
+    fd_printf(STO, "C-%c C-%c   change flowcntrl mode\r\n", 'a' + opts.escape -1, 'a' + KEY_FLOW   -1);
+    fd_printf(STO, "C-%c C-%c   change parity mode\r\n", 'a' + opts.escape -1, 'a' + KEY_PARITY -1);
+    fd_printf(STO, "C-%c C-%c   change number of databits\r\n", 'a' + opts.escape -1, 'a' + KEY_BITS   -1);
+    fd_printf(STO, "C-%c C-%c   toggle local echo\r\n", 'a' + opts.escape -1, 'a' + KEY_LECHO  -1);
+    fd_printf(STO, "C-%c C-%c   show program option\r\n", 'a' + opts.escape -1, 'a' + KEY_STATUS -1);
+    fd_printf(STO, "C-%c C-%c   send file\r\n", 'a' + opts.escape -1, 'a' + KEY_SEND   -1);
+    fd_printf(STO, "C-%c C-%c   receive file\r\n", 'a' + opts.escape -1, 'a' + KEY_RECEIVE-1);
+    fd_printf(STO, "C-%c C-%c   break\r\n", 'a' + opts.escape -1, 'a' + KEY_BREAK  -1);
+    fd_printf(STO, "C-%c C-%c   help\r\n", 'a' + opts.escape -1, 'a' + KEY_HELP   -1);
+}
+
 /**********************************************************************/
 
 #define TTY_Q_SZ 256
@@ -788,6 +808,9 @@ void Picocom::loop()
 					term_break(tty_fd);
 					fd_printf(STO, "\r\n*** break sent ***\r\n");
 					break;
+                case KEY_HELP:
+                    show_help();
+                    break;
 				default:
 					break;
 				}

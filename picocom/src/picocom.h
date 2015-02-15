@@ -40,6 +40,7 @@ extern "C"
 #define KEY_SEND    '\x13' /* C-s: send file */
 #define KEY_RECEIVE '\x12' /* C-r: receive file */
 #define KEY_BREAK   '\x1c' /* C-\: break */
+#define KEY_HELP    '\x08' /* C-h: help */
 
 #define STO STDOUT_FILENO
 #define STI STDIN_FILENO
@@ -133,7 +134,7 @@ private:
     //void deadly_handler(int signum);
     void establish_signal_handlers (void);
     void show_usage(char *name);
-
+    void show_help();
 
 };
 
