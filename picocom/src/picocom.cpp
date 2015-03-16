@@ -79,6 +79,8 @@ bool Picocom::init()
 //                     1,              /* local or modem */
 //                     !opts.noreset); /* hup-on-close. */
         r = term_add(tty_fd);
+        tohcom_send_dbus_command("init");
+        QThread::msleep(2000);
         tohcom_send_dbus_command(QString("baud %1").arg(opts.baud));
         tohcom_send_dbus_command(QString("parity %1").arg(opts.parity_str));
         tohcom_send_dbus_command(QString("bits %1").arg(opts.databits));
