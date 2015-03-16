@@ -23,7 +23,7 @@ void i2ccoms::initComs()
 
     if (!testMode)
     {
-        uart = new SC16IS850L(0x4A);
+        uart = new SC16IS850L(0x4D);
 
         if (!uart->init())
         {
@@ -96,7 +96,7 @@ void i2ccoms::debugCommand(QString cmd)
     else if (cmd.startsWith("init", Qt::CaseInsensitive))
     {
         delete(uart);
-        uart = new SC16IS850L(0x4A);
+        uart = new SC16IS850L(0x4D);
 
         if (uart->init())
             printf("init success\n");
