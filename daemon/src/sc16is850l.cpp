@@ -128,10 +128,13 @@ void SC16IS850L::setBaudrate(unsigned long bps, unsigned long xtal)
     if (lcr.isEmpty())
         return;
 
+    printf("lcr = %02x\n", lcr.at(0));
+
     /* Enable Special register set */
     writeBytes(m_address, QByteArray().append(GR_LCR).append(lcr.at(0) | 0x80));
     /* Write DLL and DLM */
-    writeBytes(m_address, QByteArray().append(SR_DLL).append((char)(N & 0xff)).append((char)((N >> 8) & 0xff)));
+    writeBytes(m_address, QByteArray().append(SR_DLL).append((char)(N & 0xff)));
+    writeBytes(m_address, QByteArray().append(SR_DLM).append((char)((N >> 8) & 0xff)));
     /* Restore General register set */
     writeBytes(m_address, QByteArray().append(GR_LCR).append(lcr.at(0) & (~0x80)));
 
