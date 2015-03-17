@@ -59,11 +59,19 @@ bool SC16IS850L::init()
 
     interrupt->requestPolling();
 
+    enableInterrupts();
+
     initOk = true;
 
     return true;
 }
 
+
+void SC16IS850L::enableInterrupts()
+{
+    /* Enable receive hold register interrupt */
+    writeBytes(m_address, QByteArray().append(GR_IER).append(IER_RHRI));
+}
 
 void SC16IS850L::processInterrupt()
 {

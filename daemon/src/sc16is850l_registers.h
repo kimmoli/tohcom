@@ -41,6 +41,9 @@
 #define SEFR_AFCR2      (char)(0x06<<3)
 #define SEFR_AFCR1      (char)(0x07<<3)
 
+/* IER - interrupt enable bits */
+#define IER_RHRI        (char)(0x01)
+
 /* LCR - line parameters */
 #define PARITY_NONE     (char)(0x00<<3)
 #define PARITY_ODD      (char)(0x01<<3)

@@ -35,6 +35,7 @@ public slots:
 
 private:
     void controlVdd(bool state);
+    void enableInterrupts();
 
     unsigned char m_address;
 
