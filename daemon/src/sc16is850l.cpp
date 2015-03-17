@@ -77,46 +77,30 @@ void SC16IS850L::processInterrupt()
 {
     QByteArray isr;
 
-    do
+    isr = writeThenRead(m_address, GR_ISR, 1);
+
+    if (isr.isEmpty())
     {
-        isr = writeThenRead(m_address, GR_ISR, 1);
+        printf("error reading ISR\n");
+        return;
+    }
 
-        if (isr.isEmpty())
-        {
-            printf("error reading ISR\n");
-            return;
-        }
-
-        printf("got interrupt: ");
-        switch (isr.at(0) & 0x3f)
-        {
-            case 0x06:
-                printf("LSR\n");
-                break;
-            case 0x04:
-                printf("RXRDY ready\n");
-                break;
-            case 0x0c:
-                printf("RXRDY timeout\n");
-                break;
-            case 0x02:
-                printf("TXRDY\n");
-                break;
-            case 0x00:
-                printf("MSR\n");
-                break;
-            case 0x10:
-                printf("RXRDY Xoff/special\n");
-                break;
-            case 0x20:
-                printf("CTS/RTS change\n");
-                break;
-            default:
-                if ((isr.at(0) & 0x01) == 0x00)
-                    printf("unknown %02x\n", isr.at(0));
-                break;
-        }
-    } while ((isr.at(0) & 0x01) == 0x00);
+    printf("got interrupt %02x : ", isr.at(0));
+    if (isr.at(0) & 0x06)
+            printf("LSR ");
+    if (isr.at(0) & 0x04)
+            printf("RXRDY ready ");
+    if (isr.at(0) & 0x0c)
+            printf("RXRDY timeout ");
+    if (isr.at(0) & 0x02)
+            printf("TXRDY ");
+    if (isr.at(0) & 0x00)
+            printf("MSR ");
+    if (isr.at(0) & 0x10)
+            printf("RXRDY Xoff/special ");
+    if (isr.at(0) & 0x20)
+            printf("CTS/RTS change");
+    printf("\n");
 }
 
 /* Calculate and set uart baudrate */
