@@ -75,32 +75,33 @@ void SC16IS850L::enableInterrupts()
 
 void SC16IS850L::processInterrupt()
 {
-    QByteArray isr;
+    QByteArray isr, rhr;
 
-    isr = writeThenRead(m_address, GR_ISR, 1);
-
-    if (isr.isEmpty())
+    do
     {
-        printf("error reading ISR\n");
-        return;
-    }
+        isr = writeThenRead(m_address, GR_ISR, 1);
 
-    printf("got interrupt %02x : ", isr.at(0));
-    if (isr.at(0) & 0x06)
-            printf("LSR ");
-    if (isr.at(0) & 0x04)
-            printf("RXRDY ready ");
-    if (isr.at(0) & 0x0c)
-            printf("RXRDY timeout ");
-    if (isr.at(0) & 0x02)
-            printf("TXRDY ");
-    if (isr.at(0) & 0x00)
-            printf("MSR ");
-    if (isr.at(0) & 0x10)
-            printf("RXRDY Xoff/special ");
-    if (isr.at(0) & 0x20)
-            printf("CTS/RTS change");
-    printf("\n");
+        if (isr.isEmpty())
+        {
+            printf("error reading ISR\n");
+            return;
+        }
+
+        /* Rx ready interrupt */
+        if (isr.at(0) == 0x04)
+        {
+            rhr.append(writeThenRead(m_address, GR_RHR, 1));
+        }
+        if (isr.at(0) == 0x0c)
+        {
+            rhr.append(writeThenRead(m_address, GR_RHR, 1));
+            printf("rx timeout\n");
+        }
+    /* no more interrupts pending */
+    } while (isr.at(0) != 0x01);
+
+    if (!rhr.isEmpty())
+        emit receive(rhr);
 }
 
 /* Calculate and set uart baudrate */

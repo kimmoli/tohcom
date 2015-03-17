@@ -30,6 +30,13 @@ void Interrupt::requestPolling()
     m_abort = false;
     m_gpio_fd = requestGpioInterrupt("67", "falling");
 
+    if (m_gpio_fd == -1)
+    {
+        printf("Error requesting gpio interrupt\n");
+        mutex.unlock();
+        return;
+    }
+
     mutex.unlock();
 
     printf("interrupt polling requested\n");
@@ -116,7 +123,7 @@ int Interrupt::requestGpioInterrupt(const char *gpio, const char *edge)
     else
         return -1; /* error */
 
-    fd = open(QString("/sys/class/gpio/gpio%1/edge").arg(gpio).toLocal8Bit().data(), O_RDONLY | O_NONBLOCK);
+    fd = open(QString("/sys/class/gpio/gpio%1/value").arg(gpio).toLocal8Bit().data(), O_RDONLY | O_NONBLOCK);
 
     return fd;
 }

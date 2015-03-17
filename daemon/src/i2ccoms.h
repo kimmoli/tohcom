@@ -19,10 +19,11 @@ signals:
     void debugCommandFinished(bool unknown);
 
 public slots:
-    void initComs();
+    void initComs(bool override = false);
     void transmit(QByteArray data);
     void debugCommand(QString cmd);
     void changeBaudrate(unsigned long bps);
+    void uartReceive(QByteArray data);
 
 private:
     SC16IS850L* uart;

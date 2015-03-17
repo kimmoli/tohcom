@@ -17,11 +17,11 @@ i2ccoms::~i2ccoms()
     printf("close i2ccoms\n");
 }
 
-void i2ccoms::initComs()
+void i2ccoms::initComs(bool override)
 {
     printf("start i2ccoms\n");
 
-    if (!testMode)
+    if (!testMode || override)
     {
         uart = new SC16IS850L(0x4D);
 
@@ -30,11 +30,20 @@ void i2ccoms::initComs()
             printf("uart init failed\n");
             emit commsErrorFatal();
         }
+        else
+        {
+            QObject::connect(uart, SIGNAL(receive(QByteArray)), this, SLOT(uartReceive(QByteArray)));
+        }
     }
     else
     {
         printf("testmode, not initialising uart\n");
     }
+}
+
+void i2ccoms::uartReceive(QByteArray data)
+{
+    emit receive(data);
 }
 
 void i2ccoms::transmit(QByteArray data)
@@ -96,12 +105,7 @@ void i2ccoms::debugCommand(QString cmd)
     else if (cmd.startsWith("init", Qt::CaseInsensitive))
     {
         delete(uart);
-        uart = new SC16IS850L(0x4D);
-
-        if (uart->init())
-            printf("init success\n");
-        else
-            printf("init failed\n");
+        initComs(true);
     }
     else if (cmd.startsWith("show", Qt::CaseInsensitive))
     {

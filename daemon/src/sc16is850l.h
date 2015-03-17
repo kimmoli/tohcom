@@ -29,6 +29,7 @@ public:
     bool dtr;
 
 signals:
+    void receive(QByteArray data);
 
 public slots:
     void processInterrupt();
