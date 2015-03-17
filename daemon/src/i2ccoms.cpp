@@ -72,7 +72,7 @@ void i2ccoms::debugCommand(QString cmd)
         printf("init        initialize uart\n");
         printf("kill        shutdown uart\n");
         printf("show        show current line settings\n");
-        printf("baud        set baudrate bps {xtal(25000000)}\n");
+        printf("baud        set baudrate bps {xtal(18432000)}\n");
         printf("send        send string over uart {string ...}\n");
         printf("parity      set parity: none, even, odd\n");
         printf("bits        set word length: 5, 6, 7 ,8\n");

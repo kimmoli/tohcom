@@ -17,7 +17,7 @@ public:
     bool init();
     bool initOk;
 
-    void setBaudrate(unsigned long bps = 115200, unsigned long xtal = 25000000);
+    void setBaudrate(unsigned long bps = 115200, unsigned long xtal = 18432000);
     void setLineparams(int parity = PARITY_NONE, int stop = STOP_1, int wordlen = WORDLEN_8);
     void setDtr(bool state);
     void transmit(QByteArray data);
